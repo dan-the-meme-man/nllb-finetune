@@ -45,6 +45,8 @@ def main():
     eps = 1e-8
     betas = (0.9, 0.999)
     weight_decay = 0.01
+    
+    # TODO: hparam search
 
     optimizer = optim.AdamW(
         model.parameters(),
@@ -54,17 +56,9 @@ def main():
         weight_decay=weight_decay
     )
 
-    # mono_dataloaders, opus_dataloaders, st_dataloaders = get_all(bs, True, 4)
-
-    # mono_dataloaders = [
-    #     get_data_loader(
-    #         os.path.join('train', 'unprocessed_train', 'monolingual', 'cni_0'),
-    #         batch_size=1,
-    #         shuffle=True,
-    #         num_workers=4,
-    #         mono=True
-    #     )
-    # ]
+    # TODO: load only parallel corpora - opus and st    
+    # opus_dataloaders = get_opus_dataloaders(bs, True, 4)
+    # st_dataloaders = get_st_dataloaders(bs, True, 4)
 
     st_dataloaders = [
         get_data_loader(
@@ -73,7 +67,7 @@ def main():
             shuffle=True,
             num_workers=4,
             mono=False,
-            num_examples=10
+            num_examples=10 # TODO: set to None
         )
     ]
 
@@ -82,8 +76,6 @@ def main():
         for dataloader in st_dataloaders:
 
             tokenizer = dataloader.dataset.tokenizer
-            
-            assert len(dataloader) == 10
             
             for i, batch in enumerate(dataloader):
                 
@@ -129,6 +121,9 @@ def main():
                 print(f'Batch {i} complete, loss: {loss}')
         
         print(f'Epoch {epoch} complete')
+        
+        # TODO: checkpoint model
+        # TODO: evaluate model on dev set
     
 if __name__ == '__main__':
     freeze_support()
