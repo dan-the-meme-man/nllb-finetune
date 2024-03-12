@@ -1,2 +1,5 @@
 __pycache__/
-train/
+proj_data_final/
+sample.py
+*.pyc
+test_data_loader.py

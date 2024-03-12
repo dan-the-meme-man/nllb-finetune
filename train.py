@@ -2,16 +2,55 @@ import os
 from gc import collect
 
 from torch.multiprocessing import freeze_support
-from torch.cuda import is_available
-from torch.cuda import empty_cache
-from torch import manual_seed
-from torch import optim
+from torch.cuda import is_available, empty_cache
+from torch import manual_seed, optim, no_grad
 
 from transformers import AutoConfig, AutoModelForSeq2SeqLM
 
-from make_tokenizer import lang_code_to_lang_token as c2t
-from get_dataloaders import get_all
-from get_dataloader import get_data_loader
+import numpy as np
+import matplotlib.pyplot as plt
+
+from get_data_loader import get_data_loader
+
+def train(loader_name, batch_size, num_batches, num_workers, epochs, model, optimizer, device, dev_loader):
+    
+    loader = get_data_loader(
+        split=loader_name,
+        batch_size=batch_size,
+        num_batches=num_batches,
+        shuffle=True,
+        num_workers=num_workers
+    )
+    
+    train_losses = []
+    dev_losses = []
+    
+    for epoch in range(epochs):
+        model.train()
+        for i, batch in enumerate(loader):
+            optimizer.zero_grad()
+            outputs = model(**batch.to(device))
+            loss = outputs.loss
+            loss.backward()
+            optimizer.step()
+            collect()
+            empty_cache()
+            item = loss.item()
+            print(f'Batch {i} complete, loss: {item}')
+            train_losses.append(item)
+        print(f'Bad supp epoch {epoch} train complete.')
+        
+        model.eval()
+        with no_grad():
+            for i, batch in enumerate(dev_loader):
+                outputs = model(**batch.to(device))
+                loss = outputs.loss
+                item = loss.item()
+                print(f'Dev batch {i} complete, loss: {item}')
+                dev_losses.append(item)
+        print(f'Bad supp epoch {epoch} eval complete.')
+        
+    return train_losses, dev_losses
 
 def main():
     
@@ -39,14 +78,18 @@ def main():
     model.to(device)
 
     """ HYPERPARAMETERS """
-    bs = 1 # TODO: change to 16
-    epochs = 10
+    overfit = False # TODO: search for optimal hyperparameters
+    batch_size        = 8     if not overfit else 1
+    bad_epochs        = 1     if not overfit else 1
+    bad_num_batches   = 10000 if not overfit else 10
+    good_epochs       = 3     if not overfit else 1
+    good_num_batches  = 10000 if not overfit else 10
+    train_epochs      = 10    if not overfit else 1
+    train_num_batches = 10000 if not overfit else 10
     lr = 1e-5
     eps = 1e-8
     betas = (0.9, 0.999)
     weight_decay = 0.01
-    
-    # TODO: hparam search
 
     optimizer = optim.AdamW(
         model.parameters(),
@@ -55,75 +98,84 @@ def main():
         betas=betas,
         weight_decay=weight_decay
     )
-
-    # TODO: load only parallel corpora - opus and st    
-    # opus_dataloaders = get_opus_dataloaders(bs, True, 4)
-    # st_dataloaders = get_st_dataloaders(bs, True, 4)
-
-    st_dataloaders = [
-        get_data_loader(
-            os.path.join('train', 'unprocessed_train', 'shared_task', 'es_ctp.train'),
-            batch_size=bs,
-            shuffle=True,
-            num_workers=4,
-            mono=False,
-            num_examples=10 # TODO: set to None
+    
+    num_workers = 2
+    dev_loader = get_data_loader(
+        split='dev',
+        batch_size=batch_size, # ignored
+        num_batches=-1, # ignored
+        shuffle=False, # ignored
+        num_workers=num_workers
+    )
+    
+    """ TRAINING - BAD SUPP """
+    bad_train_losses, bad_dev_losses = train(
+        loader_name='bad_supp',
+        batch_size=batch_size,
+        num_batches=bad_num_batches,
+        num_workers=num_workers,
+        epochs=bad_epochs,
+        model=model,
+        optimizer=optimizer,
+        device=device,
+        dev_loader=dev_loader,
+        ckpt=False
+    )
+    
+    """ TRAINING - GOOD SUPP """
+    good_train_losses, good_dev_losses = train(
+        loader_name='bad_supp',
+        batch_size=batch_size,
+        num_batches=good_num_batches,
+        num_workers=num_workers,
+        epochs=good_epochs,
+        model=model,
+        optimizer=optimizer,
+        device=device,
+        dev_loader=dev_loader,
+        ckpt=False
+    )
+    
+    """ TRAINING - TRAIN """
+    train_train_losses, train_dev_losses = train(
+        loader_name='bad_supp',
+        batch_size=batch_size,
+        num_batches=train_num_batches,
+        num_workers=num_workers,
+        epochs=train_epochs,
+        model=model,
+        optimizer=optimizer,
+        device=device,
+        dev_loader=dev_loader,
+        ckpt=True
+    )
+    
+    def plot_losses(bad, good, train, title):
+        plt.figure()
+        plt.plot(
+            range(len(bad)),
+            bad,
+            label='bad_supp'
         )
-    ]
-
-    """ TRAINING - PARALLEL DATA """
-    for epoch in range(epochs):
-        for dataloader in st_dataloaders:
-
-            tokenizer = dataloader.dataset.tokenizer
-            
-            for i, batch in enumerate(dataloader):
-                
-                optimizer.zero_grad()
-                
-                # print(batch[0])
-                # print('\n\n\n')
-                # print(batch[1])
-                # print('\n\n\n')
-                
-                model_inputs = tokenizer(
-                    text = batch[0],
-                    text_target = batch[1],
-                    return_tensors = 'pt',
-                    padding = 'max_length',
-                    truncation = True,
-                    max_length = 1024
-                )
-                
-                # print(model_inputs)
-                # exit()
-                
-                # print('mask token id:', tokenizer.mask_token_id)
-                # print('mask token:', tokenizer.mask_token)
-                
-                # print('tokenized input:', model_inputs)
-                # exit()
-                
-                model_inputs = model_inputs.to(device)
-                
-                outputs = model(**model_inputs)
-                
-                loss = outputs.loss
-                
-                loss.backward()
-                
-                optimizer.step()
-                
-                collect()
-                
-                empty_cache()
-                
-                print(f'Batch {i} complete, loss: {loss}')
+        plt.plot(
+            range(len(bad), len(bad) + len(good)),
+            good,
+            label='good_supp'
+        )
+        plt.plot(
+            range(len(bad) + len(good), len(bad) + len(good) + len(train)),
+            train,
+            label='train'
+        )
+        plt.title(title)
+        plt.grid()
+        plt.legend()
+        if not os.path.exists('plots'):
+            os.mkdir('plots')
+        plt.savefig(os.path.join('plots', f'{title}.png'))
         
-        print(f'Epoch {epoch} complete')
-        
-        # TODO: checkpoint model
-        # TODO: evaluate model on dev set
+    plot_losses(bad_train_losses, good_train_losses, train_train_losses, 'Train Losses')
+    plot_losses(bad_dev_losses, good_dev_losses, train_dev_losses, 'Dev Losses')
     
 if __name__ == '__main__':
     freeze_support()

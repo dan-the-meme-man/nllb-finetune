@@ -17,14 +17,13 @@ lang_token_to_lang_code = {
 
 lang_code_to_lang_token = {v: k for k, v in lang_token_to_lang_code.items()}
 
+lang_token_to_id = {}
+
 def make_tokenizer(tgt_lang, src_lang=None):
-    
-    if src_lang is None:
-        src_lang = 'spa_Latn'
     
     tokenizer = AutoTokenizer.from_pretrained(
         'facebook/nllb-200-distilled-600M',
-        src_lang=src_lang,
+        src_lang='spa_Latn',
         tgt_lang=tgt_lang,
         use_fast=True,
         return_tensors='pt',
@@ -32,6 +31,9 @@ def make_tokenizer(tgt_lang, src_lang=None):
         max_length=1024,
         truncation=True
     )
+    
+    assert tokenizer._src_lang == 'spa_Latn'
+    assert tokenizer.tgt_lang == tgt_lang
 
     new_special_tokens = tokenizer.additional_special_tokens
 
@@ -45,5 +47,6 @@ def make_tokenizer(tgt_lang, src_lang=None):
 
     for lang_token in lang_token_to_lang_code:
         assert lang_token in tokenizer.additional_special_tokens
+        lang_token_to_id[lang_token] = tokenizer.convert_tokens_to_ids(lang_token)
         
     return tokenizer
