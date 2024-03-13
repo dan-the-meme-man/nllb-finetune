@@ -123,8 +123,12 @@ def main():
     lr = 1e-5
     weight_decay = 0.01
     
-    output_dir = f'{batch_size}_{bad_epochs}_{bad_num_batches}_{good_epochs}_{good_num_batches}'
-    output_dir += f'_{train_epochs}_{train_num_batches}_{lr}_{weight_decay}'
+    output_dir = os.path.join('outputs', f'{batch_size}_{bad_epochs}_{bad_num_batches}_{good_epochs}')
+    output_dir += f'_{good_num_batches}_{train_epochs}_{train_num_batches}_{lr}_{weight_decay}'
+    if not os.path.exists('outputs'):
+        os.mkdir('outputs')
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
     
     optimizer = optim.AdamW(
         model.parameters(),
