@@ -116,7 +116,7 @@ class ParallelDataset(Dataset):
         return len(self.examples)
     
 class DevSet(Dataset):
-    def __init__(self, lang_code):
+    def __init__(self, lang_code, num_examples=None):
         
         super().__init__()
         
@@ -149,6 +149,8 @@ class DevSet(Dataset):
             self.examples.append(tokenized)
             if i % 1000 == 999:
                 print(f'Loaded {i+1}/{len(lines)} lines for {self.lang_token}.')
+            if num_examples is not None and i >= num_examples:
+                break
                 
     def __getitem__(self, idx):
         return self.examples[idx]
@@ -175,7 +177,7 @@ def get_data_loader(split, batch_size, num_batches, shuffle, num_workers, lang=N
     else:
         if lang is not None:
             return [DataLoader(
-                DevSet(lang),
+                DevSet(lang, num_examples=num_batches),
                 batch_size=1,
                 shuffle=False,
                 num_workers=num_workers,

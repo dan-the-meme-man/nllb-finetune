@@ -146,10 +146,10 @@ def main():
     dev_loaders = get_data_loader(
         split='dev',
         batch_size=1, # ignored
-        num_batches=-1, # ignored
+        num_batches=10, # TODO: change to None for full dev set
         shuffle=False, # ignored
         num_workers=num_workers,
-        lang='aym' # all languages TODO: change to None
+        lang='aym' # TODO: change to None for all languages
     )
     print('Dev data loaded.\n')
     
