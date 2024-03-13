@@ -149,7 +149,7 @@ def main():
         num_batches=-1, # ignored
         shuffle=False, # ignored
         num_workers=num_workers,
-        lang=None # all languages
+        lang='aym' # all languages TODO: change to None
     )
     print('Dev data loaded.\n')
     
