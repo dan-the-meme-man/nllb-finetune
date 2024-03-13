@@ -7,12 +7,11 @@ from torch import manual_seed, optim, no_grad
 
 from transformers import AutoConfig, AutoModelForSeq2SeqLM
 
-import numpy as np
 import matplotlib.pyplot as plt
 
 from get_data_loader import get_data_loader
 
-def train(loader_name, batch_size, num_batches, num_workers, epochs, model, optimizer, device, dev_loader):
+def train(loader_name, batch_size, num_batches, num_workers, epochs, model, optimizer, device, dev_loaders):
     
     loader = get_data_loader(
         split=loader_name,
@@ -42,17 +41,20 @@ def train(loader_name, batch_size, num_batches, num_workers, epochs, model, opti
         
         model.eval()
         with no_grad():
-            for i, batch in enumerate(dev_loader):
-                outputs = model(**batch.to(device))
-                loss = outputs.loss
-                item = loss.item()
-                print(f'Dev batch {i} complete, loss: {item}')
-                dev_losses.append(item)
+            for loader in dev_loaders:
+                for i, batch in enumerate(loader):
+                    outputs = model(**batch.to(device))
+                    loss = outputs.loss
+                    item = loss.item()
+                    print(f'Dev batch {i} complete, loss: {item}')
+                    dev_losses.append(item)
         print(f'Bad supp epoch {epoch} eval complete.')
         
     return train_losses, dev_losses
 
 def main():
+    
+    freeze_support()
     
     #device = 'cpu'
     device = 'cuda' if is_available() else 'cpu'
@@ -100,9 +102,9 @@ def main():
     )
     
     num_workers = 2
-    dev_loader = get_data_loader(
+    dev_loaders = get_data_loader(
         split='dev',
-        batch_size=batch_size, # ignored
+        batch_size=1, # ignored
         num_batches=-1, # ignored
         shuffle=False, # ignored
         num_workers=num_workers
@@ -118,7 +120,7 @@ def main():
         model=model,
         optimizer=optimizer,
         device=device,
-        dev_loader=dev_loader,
+        dev_loaders=dev_loaders,
         ckpt=False
     )
     
@@ -132,7 +134,7 @@ def main():
         model=model,
         optimizer=optimizer,
         device=device,
-        dev_loader=dev_loader,
+        dev_loaders=dev_loaders,
         ckpt=False
     )
     
@@ -146,7 +148,7 @@ def main():
         model=model,
         optimizer=optimizer,
         device=device,
-        dev_loader=dev_loader,
+        dev_loaders=dev_loaders,
         ckpt=True
     )
     
@@ -178,5 +180,4 @@ def main():
     plot_losses(bad_dev_losses, good_dev_losses, train_dev_losses, 'Dev Losses')
     
 if __name__ == '__main__':
-    freeze_support()
     main()
