@@ -55,17 +55,17 @@ def train(
             train_losses.append(item)
         print(f'Epoch {epoch+1} train complete.\n')
         
-        # print(f'Epoch {epoch+1} eval starting...')
-        # model.eval()
-        # with no_grad():
-        #     for loader in dev_loaders:
-        #         for i, batch in enumerate(loader):
-        #             outputs = model(**batch.to(device))
-        #             loss = outputs.loss
-        #             item = loss.item()
-        #             print(f'Dev batch {i}/{len(loader)} complete, loss: {item}')
-        #             dev_losses.append(item)    
-        # print(f'Epoch {epoch+1} eval complete.\n')
+        print(f'Epoch {epoch+1} eval starting...')
+        model.eval()
+        with no_grad():
+            for loader in dev_loaders:
+                for i, batch in enumerate(loader):
+                    outputs = model(**batch.to(device))
+                    loss = outputs.loss
+                    item = loss.item()
+                    print(f'Dev batch {i}/{len(loader)} complete, loss: {item}')
+                    dev_losses.append(item)
+        print(f'Epoch {epoch+1} eval complete.\n')
 
         if ckpt:
             print('Saving checkpoint...')
