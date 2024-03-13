@@ -76,9 +76,8 @@ def train(
                         dev_losses.append(item)
                         if do_metric:
                             print(type(outputs))
-                            print(outputs)
                             for k in outputs:
-                                print(k, outputs[k])
+                                print(k, outputs[k].shape)
                             exit()
                             # translations.append(tokenizer.batch_decode(outputs[0], skip_special_tokens=True))
             print(f'Epoch {epoch+1} eval complete.\n')
