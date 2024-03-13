@@ -22,7 +22,8 @@ def train(
     device,
     dev_loaders,
     ckpt,
-    output_str
+    output_str,
+    do_dev
 ):
     
     print('Loading data...')
@@ -56,18 +57,19 @@ def train(
             train_losses.append(item)
         print(f'Epoch {epoch+1} train complete.\n')
         
-        print(f'Epoch {epoch+1} eval starting...')
-        model.eval()
-        with no_grad():
-            for dev_loader in dev_loaders:
-                for i, batch in enumerate(dev_loader):
-                    outputs = model(**batch.to(device))
-                    loss = outputs.loss
-                    item = loss.item()
-                    if i % 100 == 99:
-                        print(f'Dev batch {i+1}/{len(dev_loader)} complete (lang={dev_loader}), loss: {item}')
-                    dev_losses.append(item)
-        print(f'Epoch {epoch+1} eval complete.\n')
+        if do_dev:
+            print(f'Epoch {epoch+1} eval starting...')
+            model.eval()
+            with no_grad():
+                for dev_loader in dev_loaders:
+                    for i, batch in enumerate(dev_loader):
+                        outputs = model(**batch.to(device))
+                        loss = outputs.loss
+                        item = loss.item()
+                        if i % 100 == 99:
+                            print(f'Dev batch {i+1}/{len(dev_loader)} complete (lang={dev_loader}), loss: {item}')
+                        dev_losses.append(item)
+            print(f'Epoch {epoch+1} eval complete.\n')
 
         if ckpt:
             print('Saving checkpoint...')
@@ -163,7 +165,8 @@ def main():
         device=device,
         dev_loaders=dev_loaders,
         ckpt=False,
-        output_str=output_str
+        output_str=output_str,
+        do_dev=False
     )
     print('Training on bad supp complete.\n')
     
@@ -180,7 +183,8 @@ def main():
         device=device,
         dev_loaders=dev_loaders,
         ckpt=False,
-        output_str=output_str
+        output_str=output_str,
+        do_dev=False
     )
     print('Training on good supp complete.\n')
     
@@ -197,7 +201,8 @@ def main():
         device=device,
         dev_loaders=dev_loaders,
         ckpt=True,
-        output_str=output_str
+        output_str=output_str,
+        do_dev=True
     )
     print('Training on train complete.\n')
     
