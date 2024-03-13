@@ -123,9 +123,9 @@ class DevSet(Dataset):
         self.examples = []        
         self.lang_token = c2t[lang_code]
         
-        tokenizer = tokenizers[self.lang_token]
-        assert tokenizer._src_lang == 'spa_Latn'
-        assert tokenizer.tgt_lang == self.lang_token
+        self.tokenizer = tokenizers[self.lang_token]
+        assert self.tokenizer._src_lang == 'spa_Latn'
+        assert self.tokenizer.tgt_lang == self.lang_token
         
         file_path = os.path.join('proj_data_final', 'dev', lang_code+'.tsv')
         lines = open(file_path, 'r', encoding='utf-8').readlines()
@@ -138,7 +138,7 @@ class DevSet(Dataset):
             if len(split) != 2:
                 continue
             
-            tokenized = tokenizer(
+            tokenized = self.tokenizer(
                 text = split[0].strip(),
                 text_target = split[1].strip(),
                 return_tensors = 'pt',
