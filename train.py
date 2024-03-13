@@ -22,7 +22,7 @@ def train(
     device,
     dev_loaders,
     ckpt,
-    output_dir
+    output_str
 ):
     
     print('Loading data...')
@@ -74,10 +74,10 @@ def train(
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
             }
-            ckpts_dir = os.path.join(output_dir, 'ckpts')
+            ckpts_dir = os.path.join('outputs', 'ckpts')
             if not os.path.exists(ckpts_dir):
                 os.mkdir(ckpts_dir)
-            save(checkpoint, os.path.join(ckpts_dir, f'checkpoint_{epoch+1}.pth'))
+            save(checkpoint, os.path.join(ckpts_dir, f'checkpoint_{epoch+1}_{output_str}.pth'))
             print('Done.\n')
         
     return train_losses, dev_losses
@@ -123,12 +123,10 @@ def main():
     lr = 1e-5
     weight_decay = 0.01
     
-    output_dir = os.path.join('outputs', f'{batch_size}_{bad_epochs}_{bad_num_batches}_{good_epochs}')
-    output_dir += f'_{good_num_batches}_{train_epochs}_{train_num_batches}_{lr}_{weight_decay}'
+    output_str = f'{batch_size}_{bad_epochs}_{bad_num_batches}_{good_epochs}'
+    output_str += f'_{good_num_batches}_{train_epochs}_{train_num_batches}_{lr}_{weight_decay}'
     if not os.path.exists('outputs'):
         os.mkdir('outputs')
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
     
     optimizer = optim.AdamW(
         model.parameters(),
@@ -162,7 +160,7 @@ def main():
         device=device,
         dev_loaders=dev_loaders,
         ckpt=False,
-        output_dir=output_dir
+        output_str=output_str
     )
     print('Training on bad supp complete.\n')
     
@@ -179,7 +177,7 @@ def main():
         device=device,
         dev_loaders=dev_loaders,
         ckpt=False,
-        output_dir=output_dir
+        output_str=output_str
     )
     print('Training on good supp complete.\n')
     
@@ -196,7 +194,7 @@ def main():
         device=device,
         dev_loaders=dev_loaders,
         ckpt=True,
-        output_dir=output_dir
+        output_str=output_str
     )
     print('Training on train complete.\n')
     
@@ -221,10 +219,10 @@ def main():
         plt.title(title)
         plt.grid()
         plt.legend()
-        plots_dir = os.path.join(output_dir, 'plots')
+        plots_dir = os.path.join('outputs', 'plots')
         if not os.path.exists(plots_dir):
             os.mkdir(plots_dir)
-        plt.savefig(os.path.join(plots_dir, f'{title}.png'))
+        plt.savefig(os.path.join(plots_dir, f'{title}_{output_str}.png'))
         
     plot_losses(bad_train_losses, good_train_losses, train_train_losses, 'train')
     plot_losses(bad_dev_losses, good_dev_losses, train_dev_losses, 'dev')
