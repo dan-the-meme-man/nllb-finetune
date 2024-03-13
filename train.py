@@ -62,12 +62,13 @@ def train(
             model.eval()
             with no_grad():
                 for dev_loader in dev_loaders:
+                    lang_token = dev_loader.dataset.lang_token
                     for i, batch in enumerate(dev_loader):
                         outputs = model(**batch.to(device))
                         loss = outputs.loss
                         item = loss.item()
                         if i % 100 == 99:
-                            print(f'Dev batch {i+1}/{len(dev_loader)} complete (lang={dev_loader}), loss: {item}')
+                            print(f'Dev batch {i+1}/{len(dev_loader)} complete (lang={lang_token}), loss: {item}')
                         dev_losses.append(item)
             print(f'Epoch {epoch+1} eval complete.\n')
 
