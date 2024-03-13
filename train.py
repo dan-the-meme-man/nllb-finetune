@@ -59,13 +59,13 @@ def train(
         print(f'Epoch {epoch+1} eval starting...')
         model.eval()
         with no_grad():
-            for loader in dev_loaders:
-                for i, batch in enumerate(loader):
+            for dev_loader in dev_loaders:
+                for i, batch in enumerate(dev_loader):
                     outputs = model(**batch.to(device))
                     loss = outputs.loss
                     item = loss.item()
                     if i % 100 == 99:
-                        print(f'Dev batch {i+1}/{len(loader)} complete, loss: {item}')
+                        print(f'Dev batch {i+1}/{len(dev_loader)} complete (lang={dev_loader}), loss: {item}')
                     dev_losses.append(item)
         print(f'Epoch {epoch+1} eval complete.\n')
 
@@ -145,7 +145,8 @@ def main():
         batch_size=1, # ignored
         num_batches=-1, # ignored
         shuffle=False, # ignored
-        num_workers=num_workers
+        num_workers=num_workers,
+        lang=None # all languages
     )
     print('Dev data loaded.\n')
     
