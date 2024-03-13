@@ -63,7 +63,8 @@ def train(
                     outputs = model(**batch.to(device))
                     loss = outputs.loss
                     item = loss.item()
-                    print(f'Dev batch {i}/{len(loader)} complete, loss: {item}')
+                    if i % 100 == 99:
+                        print(f'Dev batch {i}/{len(loader)} complete, loss: {item}')
                     dev_losses.append(item)
         print(f'Epoch {epoch+1} eval complete.\n')
 
