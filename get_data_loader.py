@@ -31,8 +31,6 @@ class ParallelDataset(Dataset):
         
         # process each file (language) and add list of examples to temp
         for file in files:
-            
-            print(f'Loading {file}...')
 
             # tokenizer from spanish to this language
             lang_token = c2t[os.path.basename(file).split('.')[0]]
@@ -81,10 +79,8 @@ class ParallelDataset(Dataset):
                     if i >= num_batches * batch_size:
                         break
                     
-                    if i % 100 == 99:
+                    if i % 1000 == 999:
                         print(f'Loaded {len(temp[lang_token]) * batch_size}/{len(lines)} lines of {lang_token}.')
-                    
-            print(f'Loaded {file}.\n')
 
         # build pmf using exponential reweighting
         probs = dict.fromkeys(c2t.values())
@@ -110,7 +106,7 @@ class ParallelDataset(Dataset):
             # randomly select an example of that language
             self.examples.append(random.choice(temp[lang_token]))
             
-            if i % 100 == 99:
+            if i % 1000 == 999:
                 print(f'Loaded {i+1}/{num_batches} batches of {split}.')
 
     def __getitem__(self, idx):
@@ -151,7 +147,7 @@ class DevSet(Dataset):
                 max_length = 1024
             )
             self.examples.append(tokenized)
-            if i % 100 == 99:
+            if i % 1000 == 999:
                 print(f'Loaded {i+1}/{len(lines)} lines for {self.lang_token}.')
                 
     def __getitem__(self, idx):
