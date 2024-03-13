@@ -75,9 +75,7 @@ def train(
                             print(f'Dev batch {i+1}/{len(dev_loader)} complete (lang={lang_token}), loss: {item}')
                         dev_losses.append(item)
                         if do_metric:
-                            for k in outputs:
-                                print(k)
-                            #print(tokenizer.batch_decode(outputs.logits, skip_special_tokens=True))
+                            print(tokenizer.batch_decode(outputs.logits, skip_special_tokens=True))
                             exit()
             print(f'Epoch {epoch+1} eval complete.\n')
 
