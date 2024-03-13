@@ -77,9 +77,9 @@ def train(
                         if do_metric:
                             print(type(outputs))
                             for k in outputs:
-                                print(k, outputs[k].shape)
+                                print(k, outputs[k])
+                            print(tokenizer.batch_decode(outputs.logits, skip_special_tokens=True))
                             exit()
-                            # translations.append(tokenizer.batch_decode(outputs[0], skip_special_tokens=True))
             print(f'Epoch {epoch+1} eval complete.\n')
 
         if ckpt:
