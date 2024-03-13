@@ -75,14 +75,10 @@ def train(
                             print(f'Dev batch {i+1}/{len(dev_loader)} complete (lang={lang_token}), loss: {item}')
                         dev_losses.append(item)
                         if do_metric:
-                            try:
-                                print(tokenizer.batch_decode(outputs, skip_special_tokens=True))
-                            except Exception as e:
-                                print('first', e)
-                                try:
-                                    print(tokenizer.batch_decode(outputs[0], skip_special_tokens=True))
-                                except Exception as e:
-                                    print('second', e)
+                            print(type(outputs))
+                            print(outputs)
+                            for k in outputs:
+                                print(k, outputs[k])
                             exit()
                             # translations.append(tokenizer.batch_decode(outputs[0], skip_special_tokens=True))
             print(f'Epoch {epoch+1} eval complete.\n')
