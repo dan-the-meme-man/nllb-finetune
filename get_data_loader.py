@@ -31,6 +31,8 @@ class ParallelDataset(Dataset):
         
         # process each file (language) and add list of examples to temp
         for file in files:
+            
+            print(f'Loading {file}...')
 
             # tokenizer from spanish to this language
             lang_token = c2t[os.path.basename(file).split('.')[0]]
@@ -74,6 +76,15 @@ class ParallelDataset(Dataset):
                     # clear batch accumulation
                     es_batch = []
                     other_batch = []
+                    
+                    # no way we could need this much data
+                    if i >= num_batches * batch_size:
+                        break
+                    
+                    if i % 100 == 99:
+                        print(f'Loaded {len(temp[lang_token]) * batch_size}/{len(lines)} lines of {lang_token}.')
+                    
+            print(f'Loaded {file}.\n')
 
         # build pmf using exponential reweighting
         probs = dict.fromkeys(c2t.values())
@@ -91,13 +102,16 @@ class ParallelDataset(Dataset):
         lang_token_list = list(c2t.values())
         lang_token_list.remove('spa_Latn')
         weights = [probs[lang_token] for lang_token in lang_token_list]
-        for _ in range(num_batches):
+        for i in range(num_batches):
             
             # randomly select a language based on pmf
             lang_token = random.choices(lang_token_list, weights=weights)[0]
             
             # randomly select an example of that language
             self.examples.append(random.choice(temp[lang_token]))
+            
+            if i % 100 == 99:
+                print(f'Loaded {i+1}/{num_batches} batches of {split}.')
 
     def __getitem__(self, idx):
         return self.examples[idx]
@@ -137,6 +151,8 @@ class DevSet(Dataset):
                 max_length = 1024
             )
             self.examples.append(tokenized)
+            if i % 100 == 99:
+                print(f'Loaded {i+1}/{len(lines)} lines for {self.lang_token}.')
                 
     def __getitem__(self, idx):
         return self.examples[idx]
