@@ -177,6 +177,8 @@ def main():
             use_tgts=True # for dev loss
         )
         print('Dev data loaded.\n')
+    else:
+        dev_loaders = None
     
     """ TRAINING - BAD SUPP """
     if do_bad:
@@ -198,6 +200,9 @@ def main():
             do_dev=False,
         )
         print('Training on bad supp complete.\n')
+    else:
+        bad_train_losses = []
+        bad_dev_losses = []
     
     """ TRAINING - GOOD SUPP """
     if do_good:
@@ -219,6 +224,9 @@ def main():
             do_dev=False,
         )
         print('Training on good supp complete.\n')
+    else:
+        good_train_losses = []
+        good_dev_losses = []
     
     """ TRAINING - TRAIN """
     print('Training on train...')
