@@ -122,7 +122,7 @@ def main():
     """ HYPERPARAMETERS """
     num_workers = 1
     overfit = True # TODO: search for optimal hyperparameters
-    batch_size        = 8     if not overfit else 2
+    batch_size        = 8     if not overfit else 1
     bad_epochs        = 1     if not overfit else 1
     bad_num_batches   = 10000 if not overfit else 5
     good_epochs       = 3     if not overfit else 1
