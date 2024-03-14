@@ -11,8 +11,6 @@ import matplotlib.pyplot as plt
 
 from get_data_loader import get_data_loader
 
-LOG_FREQ = 100
-
 def train(
     loader_name,
     batch_size,
@@ -27,7 +25,8 @@ def train(
     dev_loaders,
     ckpt,
     output_str,
-    do_dev
+    do_dev,
+    log_freq
 ):
     
     print('Loading data...')
@@ -57,7 +56,7 @@ def train(
             loss.backward()
             optimizer.step()
             item = loss.item()
-            if i % LOG_FREQ == LOG_FREQ - 1:
+            if i % log_freq == log_freq - 1:
                 print(f'Batch {i+1}/{len(loader)} complete, loss: {item}')
             train_losses.append(item)
             collect()
@@ -74,7 +73,7 @@ def train(
                         outputs = model(**batch.to(device))
                         loss = outputs.loss
                         item = loss.item()
-                        if i % LOG_FREQ == LOG_FREQ - 1:
+                        if i % log_freq == log_freq - 1:
                             print(f'Dev batch {i+1}/{len(dev_loader)} complete (lang={lang_token}), loss: {item}')
                         dev_losses.append(item)
                         collect()
@@ -115,7 +114,7 @@ def main():
         config=config,
         ignore_mismatched_sizes=True
     )
-    print('Model loaded.\n')
+    print('Model loaded.')
     
     # for name, param in model.named_parameters():
     #     print(name)
@@ -124,11 +123,11 @@ def main():
     # exit()
 
     model.to(device)
-    print(f'Model size on GPU: {memory_allocated(device=device) / 1024**3:.2f} GB')
+    print(f'Model size on GPU: {memory_allocated(device=device) / 1024**3:.2f} GB.\n')
 
     """ HYPERPARAMETERS """
     overfit           = True # TODO: search for optimal hyperparameters
-    LOG_FREQ          = 100   if not overfit else 1
+    log_freq          = 100   if not overfit else 1
     num_workers       = 1
     
     batch_size        = 8     if not overfit else 1
@@ -198,6 +197,7 @@ def main():
             ckpt=False,
             output_str=output_str,
             do_dev=False,
+            log_freq=log_freq
         )
         print('Training on bad supp complete.\n')
     else:
@@ -222,6 +222,7 @@ def main():
             ckpt=False,
             output_str=output_str,
             do_dev=False,
+            log_freq=log_freq
         )
         print('Training on good supp complete.\n')
     else:
@@ -244,7 +245,8 @@ def main():
         dev_loaders=dev_loaders,
         ckpt=True,
         output_str=output_str,
-        do_dev=do_dev
+        do_dev=do_dev,
+        log_freq=log_freq
     )
     print('Training on train complete.\n')
     
