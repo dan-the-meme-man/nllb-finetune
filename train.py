@@ -158,7 +158,7 @@ def main():
         batch_size=batch_size,
         num_batches=dev_num_batches,
         max_length=max_length,
-        lang_code=lang_code, # all languages
+        lang_code=lang_code,
         shuffle=False, # ignored
         num_workers=num_workers
     )
@@ -170,6 +170,8 @@ def main():
     #     loader_name='bad_supp',
     #     batch_size=batch_size,
     #     num_batches=bad_num_batches,
+    #     max_length=max_length,
+    #     lang_code=lang_code,
     #     num_workers=num_workers,
     #     epochs=bad_epochs,
     #     model=model,
@@ -188,6 +190,8 @@ def main():
     #     loader_name='bad_supp',
     #     batch_size=batch_size,
     #     num_batches=good_num_batches,
+    #     max_length=max_length,
+    #     lang_code=lang_code,
     #     num_workers=num_workers,
     #     epochs=good_epochs,
     #     model=model,
@@ -206,6 +210,8 @@ def main():
         loader_name='bad_supp',
         batch_size=batch_size,
         num_batches=train_num_batches,
+        max_length=max_length,
+        lang_code=lang_code,
         num_workers=num_workers,
         epochs=train_epochs,
         model=model,
@@ -250,8 +256,6 @@ def main():
     print('Done.\n')
     
     for ckpt in os.listdir(os.path.join('outputs', 'ckpts')):
-        print('ckpt', ckpt)
-        print('output_str', output_str)
         if output_str in ckpt:
             file_path = os.path.join('outputs', 'ckpts', ckpt)
             checkpoint = load(file_path)
@@ -265,13 +269,19 @@ def main():
                     for i, batch in enumerate(dev_loader):
                         outputs = model.generate(
                             **batch.to(device),
+                            forced_bos_token_id=tokenizer.lang_code_to_id[lang_token],
                             max_length=max_length,
                             num_beams=4,
                             no_repeat_ngram_size=2,
                             early_stopping=True
                         )
                         decoded = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-                        print(f'Lang: {lang_token}, Decoded: {decoded}')
+                        print(batch) # TODO: FIX
+                        print('---')
+                        print(outputs)
+                        print('---')
+                        print(decoded)
+                        exit()
 
 if __name__ == '__main__':
     main()

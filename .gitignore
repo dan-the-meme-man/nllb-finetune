@@ -5,3 +5,5 @@ sample.py
 test_data_loader.py
 outputs/
 evaluate.py
+hf_example.py
+test_decode.py
