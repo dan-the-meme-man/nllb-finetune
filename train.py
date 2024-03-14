@@ -128,15 +128,15 @@ def main():
     overfit = True # TODO: search for optimal hyperparameters
     num_workers       = 1
     batch_size        = 8     if not overfit else 1
-    bad_epochs        = 1     if not overfit else 1
-    bad_num_batches   = 10000 if not overfit else 5
-    good_epochs       = 3     if not overfit else 1
-    good_num_batches  = 10000 if not overfit else 5
-    train_epochs      = 10    if not overfit else 1
+    bad_epochs        = 1     if not overfit else 0
+    bad_num_batches   = 10000 if not overfit else 0
+    good_epochs       = 3     if not overfit else 0
+    good_num_batches  = 10000 if not overfit else 0
+    train_epochs      = 10    if not overfit else 30
     train_num_batches = 10000 if not overfit else 5
-    dev_num_batches   = None if not overfit else 5 # None for full dev set
-    max_length        = 256
-    lang_code         = None if not overfit else 'aym' # None for all languages
+    dev_num_batches   = None  if not overfit else 0     # None for full dev set
+    max_length        = 256   if not overfit else 64
+    lang_code         = None  if not overfit else 'aym' # None for all languages
     lr = 1e-5
     weight_decay = 0.01
     
