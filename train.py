@@ -250,6 +250,8 @@ def main():
     print('Done.\n')
     
     for ckpt in os.listdir(os.path.join('outputs', 'ckpts')):
+        print('ckpt', ckpt)
+        print('output_str', output_str)
         if output_str in ckpt:
             file_path = os.path.join('outputs', 'ckpts', ckpt)
             checkpoint = load(file_path)
