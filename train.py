@@ -83,9 +83,7 @@ def train(
         if ckpt:
             print('Saving checkpoint...')
             checkpoint = {
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
+                'model_state_dict': model.state_dict()
             }
             ckpts_dir = os.path.join('outputs', 'ckpts')
             if not os.path.exists(ckpts_dir):
@@ -130,7 +128,7 @@ def main():
     log_freq          = 100   if not overfit else 1
     num_workers       = 1
     
-    batch_size        = 8     if not overfit else 1
+    batch_size        = 4     if not overfit else 1
     max_length        = 256   if not overfit else 64
     lang_code         = None  if not overfit else 'aym' # None for all languages
     lr                = 1e-5
