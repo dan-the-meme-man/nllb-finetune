@@ -3,7 +3,7 @@ from gc import collect
 
 from torch.multiprocessing import freeze_support
 from torch.cuda import is_available, empty_cache, memory_allocated
-from torch import manual_seed, optim, no_grad, save, load
+from torch import manual_seed, optim, no_grad, save
 
 from transformers import AutoConfig, AutoModelForSeq2SeqLM
 
@@ -36,7 +36,8 @@ def train(
         max_length=max_length,
         lang_code=lang_code,
         shuffle=True,
-        num_workers=num_workers
+        num_workers=num_workers,
+        use_tgts=True # ignored
     )
     print('Data loaded.\n')
     
@@ -88,7 +89,7 @@ def train(
             ckpts_dir = os.path.join('outputs', 'ckpts')
             if not os.path.exists(ckpts_dir):
                 os.mkdir(ckpts_dir)
-            save(checkpoint, os.path.join(ckpts_dir, f'checkpoint_{epoch+1}_{output_str}.pth'))
+            save(checkpoint, os.path.join(ckpts_dir, f'checkpoint{epoch+1}_{output_str}.pth'))
             print('Done.\n')
         
     return train_losses, dev_losses
@@ -124,8 +125,8 @@ def main():
     print(f'Model size on GPU: {memory_allocated(device=device) / 1024**3:.2f} GB')
 
     """ HYPERPARAMETERS """
-    num_workers = 1
     overfit = True # TODO: search for optimal hyperparameters
+    num_workers       = 1
     batch_size        = 8     if not overfit else 1
     bad_epochs        = 1     if not overfit else 1
     bad_num_batches   = 10000 if not overfit else 5
@@ -160,51 +161,52 @@ def main():
         max_length=max_length,
         lang_code=lang_code,
         shuffle=False, # ignored
-        num_workers=num_workers
+        num_workers=num_workers,
+        use_tgts=True # for dev loss
     )
     print('Dev data loaded.\n')
     
-    """ TRAINING - BAD SUPP """ # TODO: uncomment
-    # print('Training on bad supp...')
-    # bad_train_losses, bad_dev_losses = train(
-    #     loader_name='bad_supp',
-    #     batch_size=batch_size,
-    #     num_batches=bad_num_batches,
-    #     max_length=max_length,
-    #     lang_code=lang_code,
-    #     num_workers=num_workers,
-    #     epochs=bad_epochs,
-    #     model=model,
-    #     optimizer=optimizer,
-    #     device=device,
-    #     dev_loaders=dev_loaders,
-    #     ckpt=False,
-    #     output_str=output_str,
-    #     do_dev=False,
-    # )
-    # print('Training on bad supp complete.\n')
+    """ TRAINING - BAD SUPP """
+    print('Training on bad supp...')
+    bad_train_losses, bad_dev_losses = train(
+        loader_name='bad_supp',
+        batch_size=batch_size,
+        num_batches=bad_num_batches,
+        max_length=max_length,
+        lang_code=lang_code,
+        num_workers=num_workers,
+        epochs=bad_epochs,
+        model=model,
+        optimizer=optimizer,
+        device=device,
+        dev_loaders=dev_loaders,
+        ckpt=False,
+        output_str=output_str,
+        do_dev=False,
+    )
+    print('Training on bad supp complete.\n')
     
-    """ TRAINING - GOOD SUPP """ # TODO: uncomment
-    # print('Training on good supp...')
-    # good_train_losses, good_dev_losses = train(
-    #     loader_name='bad_supp',
-    #     batch_size=batch_size,
-    #     num_batches=good_num_batches,
-    #     max_length=max_length,
-    #     lang_code=lang_code,
-    #     num_workers=num_workers,
-    #     epochs=good_epochs,
-    #     model=model,
-    #     optimizer=optimizer,
-    #     device=device,
-    #     dev_loaders=dev_loaders,
-    #     ckpt=False,
-    #     output_str=output_str,
-    #     do_dev=False,
-    # )
-    # print('Training on good supp complete.\n')
+    """ TRAINING - GOOD SUPP """
+    print('Training on good supp...')
+    good_train_losses, good_dev_losses = train(
+        loader_name='bad_supp',
+        batch_size=batch_size,
+        num_batches=good_num_batches,
+        max_length=max_length,
+        lang_code=lang_code,
+        num_workers=num_workers,
+        epochs=good_epochs,
+        model=model,
+        optimizer=optimizer,
+        device=device,
+        dev_loaders=dev_loaders,
+        ckpt=False,
+        output_str=output_str,
+        do_dev=False,
+    )
+    print('Training on good supp complete.\n')
     
-    """ TRAINING - TRAIN """ # TODO: uncomment
+    """ TRAINING - TRAIN """
     print('Training on train...')
     train_train_losses, train_dev_losses = train(
         loader_name='bad_supp',
@@ -249,39 +251,9 @@ def main():
         if not os.path.exists(plots_dir):
             os.mkdir(plots_dir)
         plt.savefig(os.path.join(plots_dir, f'{title}_{output_str}.png'))
-    
-    # TODO: uncomment
-    #plot_losses(bad_train_losses, good_train_losses, train_train_losses, 'train')
-    #plot_losses(bad_dev_losses, good_dev_losses, train_dev_losses, 'dev')
+    plot_losses(bad_train_losses, good_train_losses, train_train_losses, 'train')
+    plot_losses(bad_dev_losses, good_dev_losses, train_dev_losses, 'dev')
     print('Done.\n')
-    
-    for ckpt in os.listdir(os.path.join('outputs', 'ckpts')):
-        if output_str in ckpt:
-            file_path = os.path.join('outputs', 'ckpts', ckpt)
-            checkpoint = load(file_path)
-            epoch = checkpoint['epoch']
-            model.load_state_dict(checkpoint['model_state_dict'])
-            with no_grad():
-                model.eval()
-                for dev_loader in dev_loaders:
-                    lang_token = dev_loader.dataset.lang_token
-                    tokenizer = dev_loader.dataset.tokenizer
-                    for i, batch in enumerate(dev_loader):
-                        outputs = model.generate(
-                            **batch.to(device),
-                            forced_bos_token_id=tokenizer.lang_code_to_id[lang_token],
-                            max_length=max_length,
-                            num_beams=4,
-                            no_repeat_ngram_size=2,
-                            early_stopping=True
-                        )
-                        decoded = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-                        print(batch) # TODO: FIX
-                        print('---')
-                        print(outputs)
-                        print('---')
-                        print(decoded)
-                        exit()
 
 if __name__ == '__main__':
     main()
