@@ -2,7 +2,7 @@ import os
 from gc import collect
 
 from torch.multiprocessing import freeze_support
-from torch.cuda import is_available, empty_cache
+from torch.cuda import is_available, empty_cache, memory_allocated
 from torch import manual_seed, optim, no_grad, save, load
 
 from transformers import AutoConfig, AutoModelForSeq2SeqLM
@@ -49,12 +49,12 @@ def train(
             loss = outputs.loss
             loss.backward()
             optimizer.step()
-            collect()
-            empty_cache()
             item = loss.item()
             if i % 100 == 99:
                 print(f'Batch {i+1}/{len(loader)} complete, loss: {item}')
             train_losses.append(item)
+            collect()
+            empty_cache()
         print(f'Epoch {epoch+1} train complete.\n')
         
         if do_dev:
@@ -70,6 +70,8 @@ def train(
                         if i % 100 == 99:
                             print(f'Dev batch {i+1}/{len(dev_loader)} complete (lang={lang_token}), loss: {item}')
                         dev_losses.append(item)
+                        collect()
+                        empty_cache()
             print(f'Epoch {epoch+1} eval complete.\n')
 
         if ckpt:
@@ -115,8 +117,10 @@ def main():
     # exit()
 
     model.to(device)
+    print(f'Model size on GPU: {memory_allocated(device=device) / 1024**3:.2f} GB')
 
     """ HYPERPARAMETERS """
+    num_workers = 1
     overfit = True # TODO: search for optimal hyperparameters
     batch_size        = 8     if not overfit else 2
     bad_epochs        = 1     if not overfit else 1
@@ -143,7 +147,6 @@ def main():
     )
     
     print('Loading dev data...')
-    num_workers = 2
     dev_loaders = get_data_loader(
         split='dev',
         batch_size=batch_size,
@@ -260,7 +263,6 @@ def main():
                         )
                         decoded = tokenizer.batch_decode(outputs, skip_special_tokens=True)
                         print(f'Lang: {lang_token}, Decoded: {decoded}')
-            
-    
+
 if __name__ == '__main__':
     main()
