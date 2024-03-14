@@ -126,7 +126,7 @@ def main():
     print(f'Model size on GPU: {memory_allocated(device=device) / 1024**3:.2f} GB.\n')
 
     """ HYPERPARAMETERS """
-    overfit           = True # TODO: search for optimal hyperparameters
+    overfit           = False # TODO: search for optimal hyperparameters
     log_freq          = 100   if not overfit else 1
     num_workers       = 1
     
