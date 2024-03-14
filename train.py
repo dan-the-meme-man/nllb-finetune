@@ -1,5 +1,6 @@
-import os
+from os import path, mkdir
 from gc import collect
+from psutil import Process
 
 from torch.multiprocessing import freeze_support
 from torch.cuda import is_available, empty_cache, memory_allocated
@@ -7,7 +8,7 @@ from torch import manual_seed, optim, no_grad, save
 
 from transformers import AutoConfig, AutoModelForSeq2SeqLM
 
-import matplotlib.pyplot as plt
+from matplotlib.pyplot import plot, figure, savefig, grid, legend, title
 
 from get_data_loader import get_data_loader
 
@@ -41,6 +42,10 @@ def train(
         use_tgts=True # ignored
     )
     print('Data loaded.\n')
+    
+    collect()
+    empty_cache()
+    print(f'Memory: {Process().memory_info().rss / (1024 * 1024)} MB\n')
     
     train_losses = []
     dev_losses = []
@@ -85,10 +90,10 @@ def train(
             checkpoint = {
                 'model_state_dict': model.state_dict()
             }
-            ckpts_dir = os.path.join('outputs', 'ckpts')
-            if not os.path.exists(ckpts_dir):
-                os.mkdir(ckpts_dir)
-            save(checkpoint, os.path.join(ckpts_dir, f'checkpoint{epoch+1}_{output_str}.pth'))
+            ckpts_dir = path.join('outputs', 'ckpts')
+            if not path.exists(ckpts_dir):
+                mkdir(ckpts_dir)
+            save(checkpoint, path.join(ckpts_dir, f'checkpoint{epoch+1}_{output_str}.pth'))
             print('Done.\n')
         
     return train_losses, dev_losses
@@ -150,8 +155,8 @@ def main():
     
     output_str = f'{batch_size}_{bad_epochs}_{bad_num_batches}_{good_epochs}'
     output_str += f'_{good_num_batches}_{train_epochs}_{train_num_batches}_{lr}_{weight_decay}'
-    if not os.path.exists('outputs'):
-        os.mkdir('outputs')
+    if not path.exists('outputs'):
+        mkdir('outputs')
     
     optimizer = optim.AdamW(
         model.parameters(),
@@ -249,30 +254,30 @@ def main():
     print('Training on train complete.\n')
     
     print('Plotting losses...')
-    def plot_losses(bad, good, train, title):
-        plt.figure()
-        plt.plot(
+    def plot_losses(bad, good, train, plot_title):
+        figure()
+        plot(
             range(len(bad)),
             bad,
             label='bad_supp'
         )
-        plt.plot(
+        plot(
             range(len(bad), len(bad) + len(good)),
             good,
             label='good_supp'
         )
-        plt.plot(
+        plot(
             range(len(bad) + len(good), len(bad) + len(good) + len(train)),
             train,
             label='train'
         )
-        plt.title(title)
-        plt.grid()
-        plt.legend()
-        plots_dir = os.path.join('outputs', 'plots')
-        if not os.path.exists(plots_dir):
-            os.mkdir(plots_dir)
-        plt.savefig(os.path.join(plots_dir, f'{title}_{output_str}.png'))
+        title(plot_title)
+        grid()
+        legend()
+        plots_dir = path.join('outputs', 'plots')
+        if not path.exists(plots_dir):
+            mkdir(plots_dir)
+        savefig(path.join(plots_dir, f'{plot_title}_{output_str}.png'))
     plot_losses(bad_train_losses, good_train_losses, train_train_losses, 'train')
     plot_losses(bad_dev_losses, good_dev_losses, train_dev_losses, 'dev')
     print('Done.\n')

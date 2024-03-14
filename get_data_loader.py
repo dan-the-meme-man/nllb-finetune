@@ -1,19 +1,19 @@
-import os
+from os import path, listdir
 
-import random
+from random import seed, choice, choices
 
 from torch import manual_seed
 from torch.utils.data import DataLoader, Dataset
 
 from make_tokenizer import make_tokenizer, lang_code_to_lang_token as c2t, lang_token_to_id as t2i
 
-random.seed(42)
+seed(42)
 manual_seed(42)
 
 tokenizers = {lang: make_tokenizer(tgt_lang=lang) for lang in c2t.values()}
     
 class ParallelDataset(Dataset):
-    def __init__(self, files, batch_size, num_batches, max_length):
+    def __init__(self, split, files, batch_size, num_batches, max_length):
         
         super().__init__()
         
@@ -33,7 +33,7 @@ class ParallelDataset(Dataset):
         for file in files:
 
             # tokenizer from spanish to this language
-            lang_token = c2t[os.path.basename(file).split('.')[0]]
+            lang_token = c2t[path.basename(file).split('.')[0]]
             tokenizer = tokenizers[lang_token]
             assert tokenizer._src_lang == 'spa_Latn'
             assert tokenizer.tgt_lang == lang_token
@@ -48,13 +48,13 @@ class ParallelDataset(Dataset):
                 strip_line = lines[i].strip()
                 if not strip_line:
                     continue
-                split = strip_line.split('\t')
-                if len(split) != 2:
+                split_line = strip_line.split('\t')
+                if len(split_line) != 2:
                     continue
                 
                 # accumulate a batch of es sentences and other language sentences
-                es_batch.append(split[0].strip())
-                other_batch.append(split[1].strip())
+                es_batch.append(split_line[0].strip())
+                other_batch.append(split_line[1].strip())
                 
                 if len(es_batch) == batch_size or i == len(lines) - 1:
                     
@@ -101,10 +101,10 @@ class ParallelDataset(Dataset):
         for i in range(num_batches):
             
             # randomly select a language based on pmf
-            lang_token = random.choices(lang_token_list, weights=weights)[0]
+            lang_token = choices(lang_token_list, weights=weights)[0]
             
             # randomly select an example of that language
-            self.examples.append(random.choice(temp[lang_token]))
+            self.examples.append(choice(temp[lang_token]))
             
             if i % 1000 == 999:
                 print(f'Loaded {i+1}/{num_batches} batches of {split}.')
@@ -128,7 +128,7 @@ class DevSet(Dataset):
         assert self.tokenizer._src_lang == 'spa_Latn'
         assert self.tokenizer.tgt_lang == self.lang_token
         
-        file_path = os.path.join('proj_data_final', 'dev', lang_code+'.tsv')
+        file_path = path.join('proj_data_final', 'dev', lang_code+'.tsv')
         lines = open(file_path, 'r', encoding='utf-8').readlines()
         
         es_batch = []
@@ -140,13 +140,13 @@ class DevSet(Dataset):
             strip_line = lines[i].strip()
             if not strip_line:
                 continue
-            split = strip_line.split('\t')
-            if len(split) != 2:
+            split_line = strip_line.split('\t')
+            if len(split_line) != 2:
                 continue
             
-            es_batch.append(split[0].strip())
+            es_batch.append(split_line[0].strip())
             if use_tgts:
-                other_batch.append(split[1].strip())
+                other_batch.append(split_line[1].strip())
             
             if len(es_batch) == batch_size or i == len(lines) - 1:
                 
@@ -193,12 +193,12 @@ def collate_fn(batch):
 
 def get_data_loader(split, batch_size, num_batches, max_length, lang_code, shuffle, num_workers, use_tgts):
     if split != 'dev':
-        split_loc = os.path.join('proj_data_final', split)
-        files = [os.path.join(split_loc, f) for f in os.listdir(split_loc) if f.endswith('.tsv')]
+        split_loc = path.join('proj_data_final', split)
+        files = [path.join(split_loc, f) for f in listdir(split_loc) if f.endswith('.tsv')]
         if lang_code is not None:
             files = [f for f in files if lang_code in f]
         return DataLoader(
-            ParallelDataset(files, batch_size, num_batches, max_length),
+            ParallelDataset(split, files, batch_size, num_batches, max_length),
             batch_size=1, # batches are already created, so just load one at a time
             shuffle=shuffle,
             num_workers=num_workers,
