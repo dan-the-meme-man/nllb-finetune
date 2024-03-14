@@ -4,3 +4,4 @@ sample.py
 *.pyc
 test_data_loader.py
 outputs/
+evaluate.py

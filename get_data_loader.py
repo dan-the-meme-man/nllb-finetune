@@ -116,7 +116,7 @@ class ParallelDataset(Dataset):
         return len(self.examples)
     
 class DevSet(Dataset):
-    def __init__(self, lang_code, num_examples=None):
+    def __init__(self, lang_code, batch_size, num_batches=None):
         
         super().__init__()
         
@@ -129,6 +129,10 @@ class DevSet(Dataset):
         
         file_path = os.path.join('proj_data_final', 'dev', lang_code+'.tsv')
         lines = open(file_path, 'r', encoding='utf-8').readlines()
+        
+        es_batch = []
+        other_batch = []
+        
         for i in range(len(lines)):
             
             strip_line = lines[i].strip()
@@ -138,18 +142,30 @@ class DevSet(Dataset):
             if len(split) != 2:
                 continue
             
-            tokenized = self.tokenizer(
-                text = split[0].strip(),
-                text_target = split[1].strip(),
-                return_tensors = 'pt',
-                padding = 'max_length',
-                truncation = True,
-                max_length = 1024
-            )
-            self.examples.append(tokenized)
+            es_batch.append(split[0].strip())
+            other_batch.append(split[1].strip())
+            
+            if len(es_batch) == batch_size or i == len(lines) - 1:
+                    
+                assert len(es_batch) == len(other_batch)
+                
+                # tokenize a batch and append to temp dict
+                tokenized = self.tokenizer(
+                    text = es_batch,
+                    text_target = other_batch,
+                    return_tensors = 'pt',
+                    padding = 'max_length',
+                    truncation = True,
+                    max_length = 1024
+                )
+                self.examples.append(tokenized)
+                
+                es_batch = []
+                other_batch = []
+            
             if i % 1000 == 999:
                 print(f'Loaded {i+1}/{len(lines)} lines for {self.lang_token}.')
-            if num_examples is not None and i >= num_examples:
+            if num_batches is not None and i >= num_batches:
                 break
                 
     def __getitem__(self, idx):
@@ -161,12 +177,12 @@ class DevSet(Dataset):
 def collate_fn(batch):
     return batch[0]
 
-def get_data_loader(split, batch_size, num_batches, shuffle, num_workers, lang=None):
+def get_data_loader(split, batch_size, num_batches, shuffle, num_workers, lang_code=None):
     if split != 'dev':
         split_loc = os.path.join('proj_data_final', split)
         files = [os.path.join(split_loc, f) for f in os.listdir(split_loc) if f.endswith('.tsv')]
-        if lang is not None:
-            files = [f for f in files if lang in f]
+        if lang_code is not None:
+            files = [f for f in files if lang_code in f]
         return DataLoader(
             ParallelDataset(files, batch_size=batch_size, num_batches=num_batches),
             batch_size=1, # batches are already created, so just load one at a time
@@ -175,19 +191,19 @@ def get_data_loader(split, batch_size, num_batches, shuffle, num_workers, lang=N
             collate_fn=collate_fn # remove the extra dimension that DataLoader adds
         )
     else:
-        if lang is not None:
+        if lang_code is not None:
             return [DataLoader(
-                DevSet(lang, num_examples=num_batches),
-                batch_size=1,
+                DevSet(lang_code, batch_size, num_batches),
+                batch_size=1, # batches are already created, so just load one at a time
                 shuffle=False,
                 num_workers=num_workers,
                 collate_fn=collate_fn # remove the extra dimension that DataLoader adds
             )]
         else:
             return [DataLoader(
-                DevSet(lang),
-                batch_size=1,
+                DevSet(l, batch_size, num_batches),
+                batch_size=1, # batches are already created, so just load one at a time
                 shuffle=False,
                 num_workers=num_workers,
                 collate_fn=collate_fn # remove the extra dimension that DataLoader adds
-            ) for lang in c2t.keys() if lang != 'es']
+            ) for l in c2t.keys() if l != 'es']

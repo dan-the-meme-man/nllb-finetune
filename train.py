@@ -3,7 +3,7 @@ from gc import collect
 
 from torch.multiprocessing import freeze_support
 from torch.cuda import is_available, empty_cache
-from torch import manual_seed, optim, no_grad, save
+from torch import manual_seed, optim, no_grad, save, load
 
 from transformers import AutoConfig, AutoModelForSeq2SeqLM
 
@@ -23,8 +23,7 @@ def train(
     dev_loaders,
     ckpt,
     output_str,
-    do_dev,
-    do_metric
+    do_dev
 ):
     
     print('Loading data...')
@@ -64,9 +63,6 @@ def train(
             with no_grad():
                 for dev_loader in dev_loaders:
                     lang_token = dev_loader.dataset.lang_token
-                    if do_metric:
-                        translations = []
-                        tokenizer = dev_loader.dataset.tokenizer
                     for i, batch in enumerate(dev_loader):
                         outputs = model(**batch.to(device))
                         loss = outputs.loss
@@ -74,9 +70,6 @@ def train(
                         if i % 100 == 99:
                             print(f'Dev batch {i+1}/{len(dev_loader)} complete (lang={lang_token}), loss: {item}')
                         dev_losses.append(item)
-                        if do_metric:
-                            print(tokenizer.batch_decode(outputs.logits, skip_special_tokens=True))
-                            exit()
             print(f'Epoch {epoch+1} eval complete.\n')
 
         if ckpt:
@@ -125,13 +118,14 @@ def main():
 
     """ HYPERPARAMETERS """
     overfit = True # TODO: search for optimal hyperparameters
-    batch_size        = 8     if not overfit else 1
+    batch_size        = 8     if not overfit else 2
     bad_epochs        = 1     if not overfit else 1
-    bad_num_batches   = 10000 if not overfit else 10
+    bad_num_batches   = 10000 if not overfit else 5
     good_epochs       = 3     if not overfit else 1
-    good_num_batches  = 10000 if not overfit else 10
+    good_num_batches  = 10000 if not overfit else 5
     train_epochs      = 10    if not overfit else 1
-    train_num_batches = 10000 if not overfit else 10
+    train_num_batches = 10000 if not overfit else 5
+    dev_num_batches   = None if not overfit else 5 # None for full dev set
     lr = 1e-5
     weight_decay = 0.01
     
@@ -152,11 +146,11 @@ def main():
     num_workers = 2
     dev_loaders = get_data_loader(
         split='dev',
-        batch_size=1, # ignored
-        num_batches=10, # TODO: change to None for full dev set
+        batch_size=batch_size,
+        num_batches=dev_num_batches,
         shuffle=False, # ignored
         num_workers=num_workers,
-        lang='aym' # TODO: change to None for all languages
+        lang_code=None # all languages
     )
     print('Dev data loaded.\n')
     
@@ -175,7 +169,6 @@ def main():
     #     ckpt=False,
     #     output_str=output_str,
     #     do_dev=False,
-    #     do_metric=False
     # )
     # print('Training on bad supp complete.\n')
     
@@ -194,11 +187,10 @@ def main():
     #     ckpt=False,
     #     output_str=output_str,
     #     do_dev=False,
-    #     do_metric=False
     # )
     # print('Training on good supp complete.\n')
     
-    """ TRAINING - TRAIN """
+    """ TRAINING - TRAIN """ # TODO: uncomment
     print('Training on train...')
     train_train_losses, train_dev_losses = train(
         loader_name='bad_supp',
@@ -212,8 +204,7 @@ def main():
         dev_loaders=dev_loaders,
         ckpt=True,
         output_str=output_str,
-        do_dev=True,
-        do_metric=True
+        do_dev=False
     )
     print('Training on train complete.\n')
     
@@ -247,6 +238,29 @@ def main():
     #plot_losses(bad_train_losses, good_train_losses, train_train_losses, 'train')
     #plot_losses(bad_dev_losses, good_dev_losses, train_dev_losses, 'dev')
     print('Done.\n')
+    
+    for ckpt in os.listdir(os.path.join('outputs', 'ckpts')):
+        if output_str in ckpt:
+            file_path = os.path.join('outputs', 'ckpts', ckpt)
+            checkpoint = load(file_path)
+            epoch = checkpoint['epoch']
+            model.load_state_dict(checkpoint['model_state_dict'])
+            with no_grad():
+                model.eval()
+                for dev_loader in dev_loaders:
+                    lang_token = dev_loader.dataset.lang_token
+                    tokenizer = dev_loader.dataset.tokenizer
+                    for i, batch in enumerate(dev_loader):
+                        outputs = model.generate(
+                            **batch.to(device),
+                            max_length=1024,
+                            num_beams=4,
+                            no_repeat_ngram_size=2,
+                            early_stopping=True
+                        )
+                        decoded = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+                        print(f'Lang: {lang_token}, Decoded: {decoded}')
+            
     
 if __name__ == '__main__':
     main()
