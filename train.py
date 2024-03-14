@@ -111,7 +111,7 @@ def main():
     config = AutoConfig.from_pretrained(model_name)
     config.vocab_size += 8 # 8 new special tokens for languages
     
-    print('Loading model...')
+    print('\nLoading model...')
     model = AutoModelForSeq2SeqLM.from_pretrained(
         model_name,
         config=config,
