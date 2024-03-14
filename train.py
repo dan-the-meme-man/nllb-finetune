@@ -15,6 +15,8 @@ def train(
     loader_name,
     batch_size,
     num_batches,
+    max_length,
+    lang_code,
     num_workers,
     epochs,
     model,
@@ -31,6 +33,8 @@ def train(
         split=loader_name,
         batch_size=batch_size,
         num_batches=num_batches,
+        max_length=max_length,
+        lang_code=lang_code,
         shuffle=True,
         num_workers=num_workers
     )
@@ -130,6 +134,8 @@ def main():
     train_epochs      = 10    if not overfit else 1
     train_num_batches = 10000 if not overfit else 5
     dev_num_batches   = None if not overfit else 5 # None for full dev set
+    max_length        = 256
+    lang_code         = None if not overfit else 'aym' # None for all languages
     lr = 1e-5
     weight_decay = 0.01
     
@@ -151,9 +157,10 @@ def main():
         split='dev',
         batch_size=batch_size,
         num_batches=dev_num_batches,
+        max_length=max_length,
+        lang_code=lang_code, # all languages
         shuffle=False, # ignored
-        num_workers=num_workers,
-        lang_code=None # all languages
+        num_workers=num_workers
     )
     print('Dev data loaded.\n')
     
@@ -256,7 +263,7 @@ def main():
                     for i, batch in enumerate(dev_loader):
                         outputs = model.generate(
                             **batch.to(device),
-                            max_length=1024,
+                            max_length=max_length,
                             num_beams=4,
                             no_repeat_ngram_size=2,
                             early_stopping=True

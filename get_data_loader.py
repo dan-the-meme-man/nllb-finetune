@@ -13,7 +13,7 @@ manual_seed(42)
 tokenizers = {lang: make_tokenizer(tgt_lang=lang) for lang in c2t.values()}
     
 class ParallelDataset(Dataset):
-    def __init__(self, files, batch_size, num_batches):
+    def __init__(self, files, batch_size, num_batches, max_length):
         
         super().__init__()
         
@@ -67,7 +67,7 @@ class ParallelDataset(Dataset):
                         return_tensors = 'pt',
                         padding = 'max_length',
                         truncation = True,
-                        max_length = 1024
+                        max_length = max_length
                     )
                     temp[lang_token].append(tokenized)
                     
@@ -116,7 +116,7 @@ class ParallelDataset(Dataset):
         return len(self.examples)
     
 class DevSet(Dataset):
-    def __init__(self, lang_code, batch_size, num_batches=None):
+    def __init__(self, batch_size, num_batches, max_length, lang_code):
         
         super().__init__()
         
@@ -156,7 +156,7 @@ class DevSet(Dataset):
                     return_tensors = 'pt',
                     padding = 'max_length',
                     truncation = True,
-                    max_length = 1024
+                    max_length = max_length
                 )
                 self.examples.append(tokenized)
                 
@@ -177,14 +177,14 @@ class DevSet(Dataset):
 def collate_fn(batch):
     return batch[0]
 
-def get_data_loader(split, batch_size, num_batches, shuffle, num_workers, lang_code=None):
+def get_data_loader(split, batch_size, num_batches, max_length, lang_code, shuffle, num_workers):
     if split != 'dev':
         split_loc = os.path.join('proj_data_final', split)
         files = [os.path.join(split_loc, f) for f in os.listdir(split_loc) if f.endswith('.tsv')]
         if lang_code is not None:
             files = [f for f in files if lang_code in f]
         return DataLoader(
-            ParallelDataset(files, batch_size=batch_size, num_batches=num_batches),
+            ParallelDataset(files, batch_size, num_batches, max_length),
             batch_size=1, # batches are already created, so just load one at a time
             shuffle=shuffle,
             num_workers=num_workers,
@@ -193,7 +193,7 @@ def get_data_loader(split, batch_size, num_batches, shuffle, num_workers, lang_c
     else:
         if lang_code is not None:
             return [DataLoader(
-                DevSet(lang_code, batch_size, num_batches),
+                DevSet(batch_size, num_batches, max_length, lang_code),
                 batch_size=1, # batches are already created, so just load one at a time
                 shuffle=False,
                 num_workers=num_workers,
@@ -201,7 +201,7 @@ def get_data_loader(split, batch_size, num_batches, shuffle, num_workers, lang_c
             )]
         else:
             return [DataLoader(
-                DevSet(l, batch_size, num_batches),
+                DevSet(batch_size, num_batches, max_length, l),
                 batch_size=1, # batches are already created, so just load one at a time
                 shuffle=False,
                 num_workers=num_workers,
