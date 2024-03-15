@@ -8,6 +8,10 @@ dev_dir = os.path.join('proj_data_final', 'dev')
 
 longest = 0
 
+sum_lens = 0
+
+count = 0
+
 for file in os.listdir(dev_dir):
 
     with open(os.path.join(dev_dir, file), 'r', encoding='utf-8') as f:
@@ -43,8 +47,13 @@ for file in os.listdir(dev_dir):
             )
             input_ids = tokenized['input_ids'][0]
             labels = tokenized['labels'][0]
-            longer = max(len(tokenized['input_ids'][0]), len(tokenized['labels'][0]))
+            input_ids_len = len(input_ids)
+            labels_len = len(labels)
+            longer = max(input_ids_len, labels_len)
             if longer > longest:
                 longest = longer
+            sum_lens += input_ids_len + labels_len
+            count += 2
 
 print(longest)
+print(sum_lens / count)
