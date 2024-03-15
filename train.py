@@ -99,9 +99,14 @@ def train(
             save(checkpoint, path.join(ckpts_dir, f'checkpoint{epoch+1}_{output_str}.pth'))
             print('Done.\n')
     
+    optimizer.zero_grad()
     del loader
+    del loss
+    del outputs
+    del checkpoint
     collect()
     empty_cache()
+    print(f'Memory: {Process().memory_info().rss / (1024 * 1024)} MB\n')
         
     return train_losses, dev_losses
 
@@ -218,7 +223,7 @@ def main():
     if do_good:
         print('Training on good supp...')
         good_train_losses, good_dev_losses = train(
-            loader_name='bad_supp',
+            loader_name='good_supp',
             batch_size=batch_size,
             num_batches=good_num_batches,
             max_length=max_length,
@@ -242,7 +247,7 @@ def main():
     """ TRAINING - TRAIN """
     print('Training on train...')
     train_train_losses, train_dev_losses = train(
-        loader_name='bad_supp',
+        loader_name='train',
         batch_size=batch_size,
         num_batches=train_num_batches,
         max_length=max_length,
