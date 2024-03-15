@@ -71,7 +71,6 @@ def train(
             collect()
             empty_cache()
         optimizer.zero_grad()
-        del loader
         free()
         print(f'Epoch {epoch+1} train complete.\n')
         
@@ -127,6 +126,9 @@ def train(
             del checkpoint
             free()
             print('Done.\n')
+            
+    del loader
+    free()
         
     return train_losses, dev_losses
 
