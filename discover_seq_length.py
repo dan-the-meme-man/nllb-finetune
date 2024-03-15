@@ -6,11 +6,7 @@ from make_tokenizer import lang_code_to_lang_token as c2t
 
 dev_dir = os.path.join('proj_data_final', 'dev')
 
-longest = 0
-
-sum_lens = 0
-
-count = 0
+lens = []
 
 for file in os.listdir(dev_dir):
 
@@ -47,13 +43,6 @@ for file in os.listdir(dev_dir):
             )
             input_ids = tokenized['input_ids'][0]
             labels = tokenized['labels'][0]
-            input_ids_len = len(input_ids)
-            labels_len = len(labels)
-            longer = max(input_ids_len, labels_len)
-            if longer > longest:
-                longest = longer
-            sum_lens += input_ids_len + labels_len
-            count += 2
+            lens.extend([len(input_ids), len(labels)])
 
-print(longest)
-print(sum_lens / count)
+print(sorted(lens, reverse=True))
