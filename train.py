@@ -135,12 +135,12 @@ def train(
 def main():
     
     """ HYPERPARAMETERS """
-    overfit           = False # TODO: search for optimal hyperparameters
+    overfit           = True # TODO: search for optimal hyperparameters
     log_freq          = 100   if not overfit else 1
     num_workers       = 1
     
     batch_size        = 4     if not overfit else 1
-    max_length        = 512   if not overfit else 64
+    max_length        = 512   if not overfit else 16
     lang_code         = None  if not overfit else 'aym' # None for all languages
     lr                = 1e-5
     weight_decay      = 1e-2
@@ -157,8 +157,8 @@ def main():
     train_num_batches = 10000 if not overfit else 5
     
     dev_num_batches   = None  if not overfit else 1     # None for full dev set
-    do_dev            = True  if not overfit else False
-    ckpt              = True  if not overfit else False
+    do_dev            = True  if not overfit else True
+    ckpt              = True  if not overfit else True
     
     freeze_support()
     #device = 'cpu'
