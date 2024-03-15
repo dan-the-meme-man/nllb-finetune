@@ -122,7 +122,13 @@ def train(
             ckpts_dir = path.join('outputs', 'ckpts')
             if not path.exists(ckpts_dir):
                 mkdir(ckpts_dir)
-            save(checkpoint, path.join(ckpts_dir, f'checkpoint{epoch+1}_{output_str}.pth'))
+            save(
+                checkpoint,
+                path.join(
+                    ckpts_dir,
+                    f'checkpoint{epoch+1}_{output_str}.pth'
+                )
+            )
             del checkpoint
             free()
             print('Done.\n')
@@ -153,7 +159,7 @@ def main():
     good_num_batches  = 10000 if not overfit else 1
     do_good           = True  if not overfit else True
     
-    train_epochs      = 10    if not overfit else 30
+    train_epochs      = 10    if not overfit else 15
     train_num_batches = 10000 if not overfit else 5
     
     dev_num_batches   = None  if not overfit else 1     # None for full dev set
