@@ -11,7 +11,7 @@ seed(42)
 manual_seed(42)
 
 tokenizers = {lang: make_tokenizer(tgt_lang=lang) for lang in c2t.values()}
-    
+
 class ParallelDataset(Dataset):
     def __init__(self, split, files, batch_size, num_batches, max_length):
         
