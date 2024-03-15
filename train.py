@@ -30,6 +30,9 @@ def train(
     log_freq
 ):
     
+    collect()
+    empty_cache()
+    
     print('Loading data...')
     loader = get_data_loader(
         split=loader_name,
@@ -95,6 +98,10 @@ def train(
                 mkdir(ckpts_dir)
             save(checkpoint, path.join(ckpts_dir, f'checkpoint{epoch+1}_{output_str}.pth'))
             print('Done.\n')
+    
+    del loader
+    collect()
+    empty_cache()
         
     return train_losses, dev_losses
 
