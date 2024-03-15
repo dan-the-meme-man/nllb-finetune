@@ -145,7 +145,7 @@ def main():
     log_freq          = 100   if not overfit else 1
     num_workers       = 1
     
-    batch_size        = 4     if not overfit else 1
+    batch_size        = 2     if not overfit else 1
     max_length        = 384   if not overfit else 16
     lang_code         = None  if not overfit else 'aym' # None for all languages
     lr                = 1e-5
