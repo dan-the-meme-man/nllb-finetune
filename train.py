@@ -15,7 +15,7 @@ from get_data_loader import get_data_loader
 def free():
     collect()
     empty_cache()
-    print(f'Memory: {Process().memory_info().rss / (1024 * 1024)} MB\n')
+    print(f'Memory: {Process().memory_info().rss / (1024 * 1024)} MB')
 
 def train(
     loader_name,
@@ -145,19 +145,20 @@ def main():
     lr                = 1e-5
     weight_decay      = 1e-2
     
-    bad_epochs        = 1     if not overfit else 0
+    bad_epochs        = 1     if not overfit else 1
     bad_num_batches   = 10000 if not overfit else 1
-    do_bad            = True  if not overfit else False
+    do_bad            = True  if not overfit else True
     
-    good_epochs       = 3     if not overfit else 0
+    good_epochs       = 3     if not overfit else 1
     good_num_batches  = 10000 if not overfit else 1
-    do_good           = True  if not overfit else False
+    do_good           = True  if not overfit else True
     
     train_epochs      = 10    if not overfit else 30
     train_num_batches = 10000 if not overfit else 5
     
     dev_num_batches   = None  if not overfit else 1     # None for full dev set
     do_dev            = True  if not overfit else False
+    ckpt              = True  if not overfit else False
     
     freeze_support()
     #device = 'cpu'
@@ -253,7 +254,7 @@ def main():
         optimizer=optimizer,
         device=device,
         dev_num_batches=dev_num_batches,
-        ckpt=True,
+        ckpt=ckpt,
         output_str=output_str,
         do_dev=do_dev,
         log_freq=log_freq
