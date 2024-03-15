@@ -12,6 +12,11 @@ from matplotlib.pyplot import plot, figure, savefig, grid, legend, title
 
 from get_data_loader import get_data_loader
 
+def free():
+    collect()
+    empty_cache()
+    print(f'Memory: {Process().memory_info().rss / (1024 * 1024)} MB\n')
+
 def train(
     loader_name,
     batch_size,
@@ -23,17 +28,14 @@ def train(
     model,
     optimizer,
     device,
-    dev_loaders,
+    dev_num_batches,
     ckpt,
     output_str,
     do_dev,
     log_freq
 ):
-    
-    collect()
-    empty_cache()
-    
     print('Loading data...')
+    free()
     loader = get_data_loader(
         split=loader_name,
         batch_size=batch_size,
@@ -44,18 +46,15 @@ def train(
         num_workers=num_workers,
         use_tgts=True # ignored
     )
+    free()
     print('Data loaded.\n')
-    
-    collect()
-    empty_cache()
-    print(f'Memory: {Process().memory_info().rss / (1024 * 1024)} MB\n')
     
     train_losses = []
     dev_losses = []
     
     for epoch in range(epochs):
-        
         print(f'Epoch {epoch+1} starting...')
+        free()
         model.train()
         for i, batch in enumerate(loader):
             optimizer.zero_grad()
@@ -67,12 +66,34 @@ def train(
             if i % log_freq == log_freq - 1:
                 print(f'Batch {i+1}/{len(loader)} complete, loss: {item}')
             train_losses.append(item)
+            del outputs
+            del loss
             collect()
             empty_cache()
+        optimizer.zero_grad()
+        del loader
+        del checkpoint
+        free()
         print(f'Epoch {epoch+1} train complete.\n')
         
         if do_dev:
+            print('Loading dev data...')
+            free()
+            dev_loaders = get_data_loader(
+                split='dev',
+                batch_size=batch_size,
+                num_batches=dev_num_batches,
+                max_length=max_length,
+                lang_code=lang_code,
+                shuffle=False, # ignored
+                num_workers=num_workers,
+                use_tgts=True # for dev loss
+            )
+            free()
+            print('Dev data loaded.\n')
+            
             print(f'Epoch {epoch+1} eval starting...')
+            free()
             model.eval()
             with no_grad():
                 for dev_loader in dev_loaders:
@@ -82,14 +103,21 @@ def train(
                         loss = outputs.loss
                         item = loss.item()
                         if i % log_freq == log_freq - 1:
-                            print(f'Dev batch {i+1}/{len(dev_loader)} complete (lang={lang_token}), loss: {item}')
+                            msg = f'Dev batch {i+1}/{len(dev_loader)} complete'
+                            msg += f' (lang={lang_token}), loss: {item}'
+                            print(msg)
                         dev_losses.append(item)
+                        del outputs
+                        del loss
                         collect()
-                        empty_cache()
+                        empty_cache()            
+            del dev_loaders
+            free()
             print(f'Epoch {epoch+1} eval complete.\n')
 
         if ckpt:
             print('Saving checkpoint...')
+            free()
             checkpoint = {
                 'model_state_dict': model.state_dict()
             }
@@ -97,49 +125,14 @@ def train(
             if not path.exists(ckpts_dir):
                 mkdir(ckpts_dir)
             save(checkpoint, path.join(ckpts_dir, f'checkpoint{epoch+1}_{output_str}.pth'))
+            del checkpoint
+            free()
             print('Done.\n')
-    
-    optimizer.zero_grad()
-    del loader
-    del loss
-    del outputs
-    del checkpoint
-    collect()
-    empty_cache()
-    print(f'Memory: {Process().memory_info().rss / (1024 * 1024)} MB\n')
         
     return train_losses, dev_losses
 
 def main():
     
-    freeze_support()
-    
-    #device = 'cpu'
-    device = 'cuda' if is_available() else 'cpu'
-    manual_seed(42)
-
-    model_name = 'facebook/nllb-200-distilled-600M'
-    
-    config = AutoConfig.from_pretrained(model_name)
-    config.vocab_size += 8 # 8 new special tokens for languages
-    
-    print('\nLoading model...')
-    model = AutoModelForSeq2SeqLM.from_pretrained(
-        model_name,
-        config=config,
-        ignore_mismatched_sizes=True
-    )
-    print('Model loaded.')
-    
-    # for name, param in model.named_parameters():
-    #     print(name)
-    #     print(param.size())
-    #     print('\n')
-    # exit()
-
-    model.to(device)
-    print(f'Model size on GPU: {memory_allocated(device=device) / 1024**3:.2f} GB.\n')
-
     """ HYPERPARAMETERS """
     overfit           = False # TODO: search for optimal hyperparameters
     log_freq          = 100   if not overfit else 1
@@ -165,6 +158,23 @@ def main():
     dev_num_batches   = None  if not overfit else 1     # None for full dev set
     do_dev            = True  if not overfit else False
     
+    freeze_support()
+    #device = 'cpu'
+    device = 'cuda' if is_available() else 'cpu'
+    manual_seed(42)
+    model_name = 'facebook/nllb-200-distilled-600M'
+    config = AutoConfig.from_pretrained(model_name)
+    config.vocab_size += 8 # 8 new special tokens for languages
+    print('\nLoading model...')
+    model = AutoModelForSeq2SeqLM.from_pretrained(
+        model_name,
+        config=config,
+        ignore_mismatched_sizes=True
+    )
+    print('Model loaded.')
+    model.to(device)
+    print(f'Model size on GPU: {memory_allocated(device=device) / 1024**3:.2f} GB.\n')
+    
     output_str = f'{batch_size}_{bad_epochs}_{bad_num_batches}_{good_epochs}'
     output_str += f'_{good_num_batches}_{train_epochs}_{train_num_batches}_{lr}_{weight_decay}'
     if not path.exists('outputs'):
@@ -177,22 +187,6 @@ def main():
         betas=(0.9, 0.999),
         weight_decay=weight_decay
     )
-    
-    if do_dev:
-        print('Loading dev data...')
-        dev_loaders = get_data_loader(
-            split='dev',
-            batch_size=batch_size,
-            num_batches=dev_num_batches,
-            max_length=max_length,
-            lang_code=lang_code,
-            shuffle=False, # ignored
-            num_workers=num_workers,
-            use_tgts=True # for dev loss
-        )
-        print('Dev data loaded.\n')
-    else:
-        dev_loaders = None
     
     """ TRAINING - BAD SUPP """
     if do_bad:
@@ -208,7 +202,7 @@ def main():
             model=model,
             optimizer=optimizer,
             device=device,
-            dev_loaders=dev_loaders,
+            dev_num_batches=dev_num_batches,
             ckpt=False,
             output_str=output_str,
             do_dev=False,
@@ -233,7 +227,7 @@ def main():
             model=model,
             optimizer=optimizer,
             device=device,
-            dev_loaders=dev_loaders,
+            dev_num_batches=dev_num_batches,
             ckpt=False,
             output_str=output_str,
             do_dev=False,
@@ -257,7 +251,7 @@ def main():
         model=model,
         optimizer=optimizer,
         device=device,
-        dev_loaders=dev_loaders,
+        dev_num_batches=dev_num_batches,
         ckpt=True,
         output_str=output_str,
         do_dev=do_dev,

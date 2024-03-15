@@ -108,6 +108,8 @@ class ParallelDataset(Dataset):
             
             if i % 1000 == 999:
                 print(f'Loaded {i+1}/{num_batches} batches of {split}.')
+        
+        del temp
 
     def __getitem__(self, idx):
         return self.examples[idx]
