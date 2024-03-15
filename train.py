@@ -72,7 +72,6 @@ def train(
             empty_cache()
         optimizer.zero_grad()
         del loader
-        del checkpoint
         free()
         print(f'Epoch {epoch+1} train complete.\n')
         
@@ -134,7 +133,7 @@ def train(
 def main():
     
     """ HYPERPARAMETERS """
-    overfit           = False # TODO: search for optimal hyperparameters
+    overfit           = True # TODO: search for optimal hyperparameters
     log_freq          = 100   if not overfit else 1
     num_workers       = 1
     
