@@ -70,7 +70,7 @@ def train(
                 truncation=True,
                 max_length=max_length
             )
-            print(tokenized_batch)
+            #print(tokenized_batch)
             outputs = model(**tokenized_batch.to(device))
             loss = outputs.loss
             loss.backward()
@@ -162,8 +162,8 @@ def main():
     log_freq          = 100    if not overfit else 1
     num_workers       = 1
     
-    batch_size        = 32     if not overfit else 2
-    max_length        = 768    if not overfit else 16
+    batch_size        = 8      if not overfit else 2
+    max_length        = 512    if not overfit else 16
     lang_code         = None   if not overfit else None # None for all languages
     lr                = 1e-5
     weight_decay      = 1e-2

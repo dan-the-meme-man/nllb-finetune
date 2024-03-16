@@ -2,7 +2,7 @@ import os
 
 from transformers import AutoTokenizer
 
-from make_tokenizer import lang_code_to_lang_token as c2t
+from make_tokenizer import c2t
 
 dev_dir = os.path.join('proj_data_final', 'dev')
 
