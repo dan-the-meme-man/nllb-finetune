@@ -5,15 +5,13 @@ from random import seed, choice, choices
 from torch import manual_seed
 from torch.utils.data import DataLoader, Dataset
 
-from make_tokenizer import make_tokenizer, lang_code_to_lang_token as c2t, lang_token_to_id as t2i
+from make_tokenizer import make_tokenizer, c2t
 
 seed(42)
 manual_seed(42)
 
-tokenizers = {lang: make_tokenizer(tgt_lang=lang) for lang in c2t.values()}
-
 class ParallelDataset(Dataset):
-    def __init__(self, split, files, batch_size, num_batches, max_length):
+    def __init__(self, split, files, batch_size, num_batches):
         
         super().__init__()
         
@@ -34,9 +32,9 @@ class ParallelDataset(Dataset):
 
             # tokenizer from spanish to this language
             lang_token = c2t[path.basename(file).split('.')[0]]
-            tokenizer = tokenizers[lang_token]
-            assert tokenizer._src_lang == 'spa_Latn'
-            assert tokenizer.tgt_lang == lang_token
+            # tokenizer = tokenizers[lang_token]
+            # assert tokenizer._src_lang == 'spa_Latn'
+            # assert tokenizer.tgt_lang == lang_token
             
             # lists of spanish and other language sentences
             es_batch = []
@@ -61,15 +59,16 @@ class ParallelDataset(Dataset):
                     assert len(es_batch) == len(other_batch)
                     
                     # tokenize a batch and append to temp dict
-                    tokenized = tokenizers[lang_token](
-                        text = es_batch,
-                        text_target = other_batch,
-                        return_tensors = 'pt',
-                        padding = 'max_length',
-                        truncation = True,
-                        max_length = max_length
-                    )
-                    temp[lang_token].append(tokenized)
+                    # tokenized = tokenizers[lang_token](
+                    #     text = es_batch,
+                    #     text_target = other_batch,
+                    #     return_tensors = 'pt',
+                    #     padding = 'max_length',
+                    #     truncation = True,
+                    #     max_length = max_length
+                    # )
+                    # temp[lang_token].append(tokenized)
+                    temp[lang_token].append((es_batch, other_batch, lang_token))
                     
                     # clear batch accumulation
                     es_batch = []
@@ -125,6 +124,11 @@ class DevSet(Dataset):
         self.examples = []
         self.lang_code = lang_code
         self.lang_token = c2t[lang_code]
+        
+        tokenizers = dict.fromkeys(c2t.values())
+        
+        for lang_token in tokenizers:
+            tokenizers[lang_token] = make_tokenizer(lang_token, 'spa_Latn', max_length)
         
         self.tokenizer = tokenizers[self.lang_token]
         assert self.tokenizer._src_lang == 'spa_Latn'
@@ -200,7 +204,7 @@ def get_data_loader(split, batch_size, num_batches, max_length, lang_code, shuff
         if lang_code is not None:
             files = [f for f in files if lang_code in f]
         return DataLoader(
-            ParallelDataset(split, files, batch_size, num_batches, max_length),
+            ParallelDataset(split, files, batch_size, num_batches),
             batch_size=1, # batches are already created, so just load one at a time
             shuffle=shuffle,
             num_workers=num_workers,

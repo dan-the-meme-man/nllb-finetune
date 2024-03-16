@@ -12,6 +12,8 @@ from matplotlib.pyplot import plot, figure, savefig, grid, legend, title
 
 from get_data_loader import get_data_loader
 
+from make_tokenizer import make_tokenizer, c2t
+
 def free():
     collect()
     empty_cache()
@@ -19,6 +21,7 @@ def free():
 
 def train(
     loader_name,
+    tokenizers,
     batch_size,
     num_batches,
     max_length,
@@ -58,7 +61,16 @@ def train(
         model.train()
         for i, batch in enumerate(loader):
             optimizer.zero_grad()
-            outputs = model(**batch.to(device))
+            es_texts, other_texts, lang_token = batch
+            tokenized_batch = tokenizers[lang_token](
+                text=es_texts,
+                text_target=other_texts,
+                return_tensors='pt',
+                padding='max_length',
+                truncation=True,
+                max_length=max_length
+            )
+            outputs = model(**tokenized_batch.to(device))
             loss = outputs.loss
             loss.backward()
             optimizer.step()
@@ -145,7 +157,7 @@ def train(
 def main():
     
     """ HYPERPARAMETERS """
-    overfit           = False # TODO: search for optimal hyperparameters
+    overfit           = True # TODO: search for optimal hyperparameters
     log_freq          = 100   if not overfit else 1
     num_workers       = 1
     
@@ -174,6 +186,9 @@ def main():
     #device = 'cpu'
     device = 'cuda' if is_available() else 'cpu'
     manual_seed(42)
+    tokenizers = dict.fromkeys(c2t.values())
+    for lang_token in tokenizers:
+        tokenizers[lang_token] = make_tokenizer(lang_token, 'spa_Latn', max_length)
     model_name = 'facebook/nllb-200-distilled-600M'
     config = AutoConfig.from_pretrained(model_name)
     config.vocab_size += 8 # 8 new special tokens for languages
@@ -205,6 +220,7 @@ def main():
         print('Training on bad supp...')
         bad_train_losses, bad_dev_losses = train(
             loader_name='bad_supp',
+            tokenizers=tokenizers,
             batch_size=batch_size,
             num_batches=bad_num_batches,
             max_length=max_length,
@@ -230,6 +246,7 @@ def main():
         print('Training on good supp...')
         good_train_losses, good_dev_losses = train(
             loader_name='good_supp',
+            tokenizers=tokenizers,
             batch_size=batch_size,
             num_batches=good_num_batches,
             max_length=max_length,
@@ -254,6 +271,7 @@ def main():
     print('Training on train...')
     train_train_losses, train_dev_losses = train(
         loader_name='train',
+        tokenizers=tokenizers,
         batch_size=batch_size,
         num_batches=train_num_batches,
         max_length=max_length,

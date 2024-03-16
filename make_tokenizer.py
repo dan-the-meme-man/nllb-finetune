@@ -1,6 +1,6 @@
 from transformers import AutoTokenizer
 
-lang_token_to_lang_code = {
+t2c = {
     'spa_Latn': 'es', # should be in there - note difference
     'ayr_Latn': 'aym', # should be in there - note difference
     'quy_Latn': 'quy', # should be in there
@@ -15,20 +15,20 @@ lang_token_to_lang_code = {
     'tar_Latn': 'tar'
 }
 
-lang_code_to_lang_token = {v: k for k, v in lang_token_to_lang_code.items()}
+c2t = {v: k for k, v in t2c.items()}
 
-lang_token_to_id = {}
+t2i = {}
 
-def make_tokenizer(tgt_lang, src_lang=None):
+def make_tokenizer(tgt_lang, src_lang, max_length):
     
     tokenizer = AutoTokenizer.from_pretrained(
         'facebook/nllb-200-distilled-600M',
-        src_lang='spa_Latn',
+        src_lang=src_lang,
         tgt_lang=tgt_lang,
         use_fast=True,
         return_tensors='pt',
         padding='max_length',
-        max_length=1024,
+        max_length=max_length,
         truncation=True
     )
     
@@ -37,7 +37,7 @@ def make_tokenizer(tgt_lang, src_lang=None):
 
     new_special_tokens = tokenizer.additional_special_tokens
 
-    for lang_token in lang_token_to_lang_code:
+    for lang_token in t2c:
         if lang_token in new_special_tokens:
             continue
         else:
@@ -45,8 +45,8 @@ def make_tokenizer(tgt_lang, src_lang=None):
 
     tokenizer.add_special_tokens({'additional_special_tokens': new_special_tokens})
 
-    for lang_token in lang_token_to_lang_code:
+    for lang_token in t2c:
         assert lang_token in tokenizer.additional_special_tokens
-        lang_token_to_id[lang_token] = tokenizer.convert_tokens_to_ids(lang_token)
+        t2i[lang_token] = tokenizer.convert_tokens_to_ids(lang_token)
         
     return tokenizer
