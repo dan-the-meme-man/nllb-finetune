@@ -66,6 +66,8 @@ def train(
             if i % log_freq == log_freq - 1:
                 print(f'Batch {i+1}/{len(loader)} complete, loss: {item}')
             train_losses.append(item)
+            del item
+            del batch
             del outputs
             del loss
             collect()
@@ -105,6 +107,8 @@ def train(
                             msg += f' (lang={lang_token}), loss: {item}'
                             print(msg)
                         dev_losses.append(item)
+                        del item
+                        del batch
                         del outputs
                         del loss
                         collect()
