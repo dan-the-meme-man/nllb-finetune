@@ -158,7 +158,7 @@ def train(
 def main():
     
     """ HYPERPARAMETERS """ # TODO: search for optimal hyperparameters
-    overfit           = True
+    overfit           = False
     log_freq          = 100    if not overfit else 1
     num_workers       = 1
     
