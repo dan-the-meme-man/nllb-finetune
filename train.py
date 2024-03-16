@@ -70,6 +70,7 @@ def train(
                 truncation=True,
                 max_length=max_length
             )
+            print(tokenized_batch)
             outputs = model(**tokenized_batch.to(device))
             loss = outputs.loss
             loss.backward()
@@ -161,26 +162,26 @@ def main():
     log_freq          = 100   if not overfit else 1
     num_workers       = 1
     
-    batch_size        = 2     if not overfit else 1
+    batch_size        = 2     if not overfit else 2
     max_length        = 384   if not overfit else 16
-    lang_code         = None  if not overfit else 'aym' # None for all languages
+    lang_code         = None  if not overfit else None # None for all languages
     lr                = 1e-5
     weight_decay      = 1e-2
     
     bad_epochs        = 1     if not overfit else 1
-    bad_num_batches   = 10000 if not overfit else 1
+    bad_num_batches   = 10000 if not overfit else 20
     do_bad            = True  if not overfit else True
     
     good_epochs       = 3     if not overfit else 1
-    good_num_batches  = 10000 if not overfit else 1
+    good_num_batches  = 10000 if not overfit else 20
     do_good           = True  if not overfit else True
     
     train_epochs      = 10    if not overfit else 15
-    train_num_batches = 10000 if not overfit else 5
+    train_num_batches = 10000 if not overfit else 20
     
-    dev_num_batches   = None  if not overfit else 1     # None for full dev set
+    dev_num_batches   = None  if not overfit else 20     # None for full dev set
     do_dev            = True  if not overfit else True
-    ckpt              = True  if not overfit else True
+    ckpt              = True  if not overfit else False
     
     freeze_support()
     #device = 'cpu'
