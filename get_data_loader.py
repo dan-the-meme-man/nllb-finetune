@@ -112,7 +112,7 @@ class TrainDataset(Dataset):
             # randomly select an example of that language
             self.examples.append(choice(temp[lang_token]))
             
-            if len(self.examples) % 10000 == 0:
+            if len(self.examples) % 1000 == 0:
                 print(f'Loaded {len(self.examples)}/{num_batches} batches of {split}.')
         
         del temp
@@ -190,9 +190,8 @@ class SuppDataset(Dataset):
                     # no way we could need this much data
                     if i >= num_batches * batch_size:
                         break
-                    
-                    if i % 1000 == 999:
-                        print(f'Loaded {len(temp[lang_token]) * batch_size}/{len(lines)} lines of {lang_token}.')
+
+            print(f'Loaded {len(temp[lang_token]) * batch_size}/{len(lines)} lines of {lang_token}.')
 
         # build pmf using exponential reweighting
         probs = dict.fromkeys(c2t.values())
