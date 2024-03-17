@@ -159,29 +159,29 @@ def main():
     
     """ HYPERPARAMETERS """ # TODO: search for optimal hyperparameters
     overfit           = False
-    log_freq          = 100    if not overfit else 1
+    log_freq          = 100     if not overfit else 1
     num_workers       = 1
     
-    batch_size        = 2      if not overfit else 2
-    max_length        = 384    if not overfit else 16
-    lang_code         = None   if not overfit else None # None for all languages
+    batch_size        = 4       if not overfit else 2
+    max_length        = 384     if not overfit else 16
+    lang_code         = None    if not overfit else None # None for all languages
     lr                = 1e-5
     weight_decay      = 1e-2
     
-    bad_epochs        = 1      if not overfit else 0
-    bad_num_batches   = 100000 if not overfit else 1    # random sampling
-    do_bad            = True   if not overfit else True
+    bad_epochs        = 1       if not overfit else 0
+    bad_num_batches   = 25_000  if not overfit else 1    # random sampling
+    do_bad            = True    if not overfit else True
     
-    good_epochs       = 3      if not overfit else 0
-    good_num_batches  = 100000 if not overfit else 1    # random sampling
-    do_good           = True   if not overfit else True
+    good_epochs       = 3       if not overfit else 0
+    good_num_batches  = 25_000  if not overfit else 1    # random sampling
+    do_good           = True    if not overfit else True
     
-    train_epochs      = 10     if not overfit else 10
-    train_num_batches = 300000 if not overfit else 20   # includes entire train set if above 210368
+    train_epochs      = 10      if not overfit else 10   # every training example is guaranteed included:
+    train_num_batches = 75_000  if not overfit else 20   # IF train_num_batches * batch_size >= 210368
     
-    dev_num_batches   = None   if not overfit else 20     # None for full dev set
-    do_dev            = True   if not overfit else True
-    ckpt              = True   if not overfit else False
+    dev_num_batches   = None    if not overfit else 20     # None for full dev set
+    do_dev            = True    if not overfit else True
+    ckpt              = True    if not overfit else False
     
     freeze_support()
     #device = 'cpu'
