@@ -143,7 +143,7 @@ def train(
                 checkpoint,
                 path.join(
                     ckpts_dir,
-                    f'checkpoint{epoch+1}_{output_str}.pth'
+                    f'checkpoint{epoch+1}_{loader_name}_{output_str}.pth'
                 )
             )
             del checkpoint
@@ -193,6 +193,7 @@ def main():
     model_name = 'facebook/nllb-200-distilled-600M'
     config = AutoConfig.from_pretrained(model_name)
     config.vocab_size += 8 # 8 new special tokens for languages
+    config.max_position_embeddings = max_length
     print('\nLoading model...')
     model = AutoModelForSeq2SeqLM.from_pretrained(
         model_name,
@@ -232,7 +233,7 @@ def main():
             optimizer=optimizer,
             device=device,
             dev_num_batches=dev_num_batches,
-            ckpt=False,
+            ckpt=ckpt,
             output_str=output_str,
             do_dev=False,
             log_freq=log_freq
@@ -258,7 +259,7 @@ def main():
             optimizer=optimizer,
             device=device,
             dev_num_batches=dev_num_batches,
-            ckpt=False,
+            ckpt=ckpt,
             output_str=output_str,
             do_dev=False,
             log_freq=log_freq
