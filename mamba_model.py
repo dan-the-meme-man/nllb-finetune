@@ -3,6 +3,19 @@ from torch.nn import Module, Linear, ReLU, Sequential
 from mamba_ssm import Mamba
 
 class MambaModel(Module):
+    
+    """
+        MambaModel uses Mamba blocks to do MT.
+        
+        Parameters:
+        - layers (int): number of Mamba blocks
+        - d_model (int): dimension of the input and output
+        - d_state (int): dimension of the state
+        - d_conv (int): dimension of the convolutional layer
+        - expand (int): expansion factor
+        - max_length (int): maximum length of the sequence
+    """
+    
     def __init__(
         self,
         layers: int,
@@ -37,12 +50,37 @@ class MambaModel(Module):
     
     # TODO: decide on how to do seq2seq
     def forward(self, x, u):
+        
+        """
+            Forward pass of the model.
+            
+            Parameters:
+            - x (torch.Tensor): input sequence
+            - u (torch.Tensor): input control signal
+            
+            Returns:
+            - y (torch.Tensor): output sequence
+        """
+        
         ssm_out = self.ssm(x, u)
         y = self.obs_model(ssm_out)
         return y
     
     # TODO: decide on how to do seq2seq
     def generate(self, x, u):
+        
+        """
+            Generate the output sequence and the state sequence.
+            
+            Parameters:
+            - x (torch.Tensor): input sequence
+            - u (torch.Tensor): input control signal
+            
+            Returns:
+            - y (torch.Tensor): output sequence
+            - x (torch.Tensor): state sequence
+        """
+        
         ssm_out = self.ssm(x, u)
         y = self.obs_model(ssm_out)
         return y, x

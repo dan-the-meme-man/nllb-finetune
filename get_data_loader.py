@@ -442,7 +442,7 @@ def get_data_loader(
     batch_size: int,
     num_batches: int,
     max_length: int,
-    lang_code: str|None,
+    lang_code: str,
     shuffle: bool,
     num_workers: int,
     use_tgts: bool

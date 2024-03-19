@@ -39,14 +39,10 @@ def plot_losses(
         Plot losses for each split.
         
         Parameters:
-        - bad: list
-            Losses for bad_supp.
-        - good: list
-            Losses for good_supp.
-        - train: list
-            Losses for train.
-        - plot_title: str
-            Title of the plot.
+        - bad (list): Losses for bad_supp.
+        - good (list): Losses for good_supp.
+        - train (list): Losses for train.
+        - plot_title (str): Title of the plot.
     """
     
     figure()
@@ -82,14 +78,11 @@ def tokenize_batch(
             Tokenize a batch of text.
             
             Parameters:
-            - tokenizer: spm.SentencePieceProcessor
-                Tokenizer.
-            - batch: list[str]
-                Batch of text.
+            - tokenizer (spm.SentencePieceProcessor): Tokenizer.
+            - batch (list[str]): Batch of text.
                 
             Returns:
-            - torch.Tensor
-                Tokenized batch.
+            - torch.Tensor: Tokenized batch.
         """
         
         es_texts, other_texts, lang_token = batch # unpack batch and lang token
@@ -133,44 +126,26 @@ def train(
         Train the model on the specified data loader.
         
         Parameters:
-        - loader_name: str
-            Name of the data loader. One of 'bad_supp', 'good_supp', 'train'.
-        - tokenizers: dict[str, AutoTokenizer]
-            Tokenizers for each language.
-        - batch_size: int
-            Batch size.
-        - num_batches: int
-            Number of batches to train on.
-        - max_length: int
-            Maximum length of the input sequences.
-        - lang_code: str
-            Language code. Set to None for all languages.
-        - num_workers: int
-            Number of workers for the data loader.
-        - epochs: int
-            Number of epochs.
-        - model: AutoModelForSeq2SeqLM
-            Model to train.
-        - optimizer: optim.Optimizer
-            Optimizer.
-        - device: str
-            Device.
-        - dev_num_batches: int
-            Number of batches to evaluate on.
-        - ckpt: bool
-            Whether to save checkpoints.
-        - output_str: str
-            Output string.
-        - do_dev: bool
-            Whether to evaluate on dev. Ignored except for 'train' split.
-        - log_freq: int
-            Frequency of logging in batches.
+        - loader_name (str): Name of the data loader. One of 'bad_supp', 'good_supp', 'train'.
+        - tokenizers (dict[str, AutoTokenizer]): Tokenizers for each language.
+        - batch_size (int): Batch size.
+        - num_batches (int): Number of batches to train on.
+        - max_length (int): Maximum length of the input sequences.
+        - lang_code (str): Language code. Set to None for all languages.
+        - num_workers (int): Number of workers for the data loader.
+        - epochs (int): Number of epochs.
+        - model (AutoModelForSeq2SeqLM): Model to train.
+        - optimizer (optim.Optimizer): Optimizer.
+        - device (str): Device.
+        - dev_num_batches (int): Number of batches to evaluate on.
+        - ckpt (bool): Whether to save checkpoints.
+        - output_str (str): Output string.
+        - do_dev (bool): Whether to evaluate on dev. Ignored except for 'train' split.
+        - log_freq (int): Frequency of logging in batches.
             
         Returns:
-        - list
-            Train losses.
-        - list
-            Dev losses.
+        - list: Train losses.
+        - list: Dev losses.
     """
 
     print('Loading data...') # retrieve appropriate data loader
