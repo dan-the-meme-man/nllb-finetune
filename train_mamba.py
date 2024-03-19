@@ -101,7 +101,7 @@ def tokenize_batch(
             while len(token_ids) < max_length: # pad to max length
                 token_ids.append(tokenizer.PieceToId('<pad>'))
             
-            tokenized_batch.append(token_ids)
+            tokenized_batch.append(token_ids[:max_length])
             
         # tokenized as if: hola que tal <aym> (same sentence in Aymara)
         # TODO: this is suitable for next token prediction, but maybe not correct for seq2seq
