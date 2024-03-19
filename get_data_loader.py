@@ -1,5 +1,7 @@
 from os import path, listdir
 
+from typing import Union
+
 from random import seed, choice, choices
 
 from torch import manual_seed
@@ -442,11 +444,11 @@ def get_data_loader(
     batch_size: int,
     num_batches: int,
     max_length: int,
-    lang_code: str,
+    lang_code: Union[str, None],
     shuffle: bool,
     num_workers: int,
     use_tgts: bool
-) -> DataLoader|list[DataLoader]:
+) -> Union[DataLoader, list[DataLoader]]:
     
     """
         Returns a DataLoader (or list of) for the specified split and language code.
@@ -458,13 +460,13 @@ def get_data_loader(
         - batch_size (int): The number of examples in each batch.
         - num_batches (int): The number of batches to load.
         - max_length (int): The maximum length of a sequence.
-        - lang_code (str|None): The language code of the target language.
+        - lang_code Union[str, None]: The language code of the target language.
         - shuffle (bool): Whether to shuffle the data.
         - num_workers (int): The number of workers to use for loading data.
         - use_tgts (bool): Whether to use target sentences.
         
         Returns:
-        - DataLoader|list[DataLoader]: The DataLoader (or list of) for the specified split and language code.
+        - Union[DataLoader, list[DataLoader]]: DataLoader (or list of) for specified split and language code.
     """
     
     if split != 'dev':
