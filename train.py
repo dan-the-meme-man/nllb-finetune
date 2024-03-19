@@ -258,7 +258,7 @@ def main():
     log_freq          = 100     if not overfit else 1     # frequency of logging in batches
     num_workers       = 1                                 # number of workers for data loader
     
-    batch_size        = 4       if not overfit else 2     # batch size
+    batch_size        = 16      if not overfit else 2     # batch size
     max_length        = 384     if not overfit else 16    # maximum length of input sequences
     lang_code         = None    if not overfit else None  # None for all languages
     
@@ -266,15 +266,15 @@ def main():
     weight_decay      = 1e-2                              # weight decay
     
     bad_epochs        = 1       if not overfit else 0     # num epochs through bad_supp
-    bad_num_batches   = 25_000  if not overfit else 1     # random sampling is used
+    bad_num_batches   = 6_250  if not overfit else 1     # random sampling is used
     do_bad            = True    if not overfit else True  # whether to train on bad_supp
     
     good_epochs       = 3       if not overfit else 0     # num epochs through good_supp
-    good_num_batches  = 25_000  if not overfit else 1     # random sampling is used
+    good_num_batches  = 6_250  if not overfit else 1     # random sampling is used
     do_good           = True    if not overfit else True  # whether to train on good_supp
     
     train_epochs      = 10      if not overfit else 10    # every training example is guaranteed included:
-    train_num_batches = 75_000  if not overfit else 20    # IF train_num_batches * batch_size >= 210368
+    train_num_batches = 18_750  if not overfit else 20    # IF train_num_batches * batch_size >= 210368
     
     dev_num_batches   = None    if not overfit else 20    # None for full dev set
     do_dev            = True    if not overfit else True  # whether to evaluate on dev (ignored for supp data)
