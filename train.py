@@ -230,7 +230,8 @@ def train(
             print('Saving checkpoint...')
             free()
             checkpoint = {
-                'model_state_dict': model.state_dict()
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
             }
             ckpts_dir = path.join('outputs', 'ckpts')
             if not path.exists(ckpts_dir):
