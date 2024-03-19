@@ -3,8 +3,8 @@ import os
 import sentencepiece as spm
 
 input_for_training = os.path.join('vocab', 'vocab.txt')
-model_name = os.path.join('vocab', 'bpe') # unigram or bpe
-train = True
+model_name = os.path.join('vocab', 'unigram') # unigram or bpe
+train = False
 #train = False # training is done already
 
 """TRAINING A SENTENCEPIECE TOKENIZER BELOW"""
