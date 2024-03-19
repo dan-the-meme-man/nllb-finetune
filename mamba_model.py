@@ -47,6 +47,11 @@ class MambaModel(Module):
             ReLU(),
             Linear(d_model, d_model)
         )
+        
+        # TODO: necessary?
+        for p in self.parameters():
+            if p.dim() > 1:
+                self.init.xavier_uniform_(p)
     
     # TODO: decide on how to do seq2seq
     def forward(self, x, u):

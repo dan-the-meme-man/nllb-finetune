@@ -71,7 +71,8 @@ def plot_losses(
 
 def tokenize_batch(
     tokenizer: spm.SentencePieceProcessor,
-    batch: tuple[list[str], list[str], str]
+    batch: tuple[list[str], list[str], str],
+    max_length: int
 ) -> Tensor:
         
         """
@@ -80,6 +81,7 @@ def tokenize_batch(
             Parameters:
             - tokenizer (spm.SentencePieceProcessor): Tokenizer.
             - batch (list[str]): Batch of text.
+            - max_length (int): Maximum length of the input sequences.
                 
             Returns:
             - torch.Tensor: Tokenized batch.
@@ -91,11 +93,15 @@ def tokenize_batch(
         
         tokenized_batch = []
         for es_text, other_text in zip(es_texts, other_texts):
-            tokenized_batch.append(
-                tokenizer.EncodeAsIds(es_text) +
-                [tokenizer.PieceToId('<' + t2c[lang_token] + '>')] +
-                tokenizer.EncodeAsIds(other_text)
-            )
+            
+            token_ids = tokenizer.EncodeAsIds(es_text) # es
+            token_ids += [tokenizer.PieceToId('<' + t2c[lang_token] + '>')] # lang token
+            token_ids += tokenizer.EncodeAsIds(other_text) # other
+            
+            while len(token_ids) < max_length: # pad to max length
+                token_ids.append(tokenizer.PieceToId('<pad>'))
+            
+            tokenized_batch.append(token_ids)
             
         # tokenized as if: hola que tal <aym> (same sentence in Aymara)
         # TODO: this is suitable for next token prediction, but maybe not correct for seq2seq
@@ -171,7 +177,7 @@ def train(
         free()
         model.train() # ensure training mode
         for i, batch in enumerate(loader): # batch loop
-            tokenized_batch = tokenize_batch(tokenizer, batch)
+            tokenized_batch = tokenize_batch(tokenizer, batch, max_length)
             optimizer.zero_grad() # run training step
             outputs = model(tokenized_batch.to(device))
             loss = None # TODO: choose loss function and compute here
@@ -281,11 +287,11 @@ def main():
     d_conv            = 4       if not overfit else 4     # dimension of convolution
     expand            = 2       if not overfit else 2     # expansion factor
     
-    bad_epochs        = 1       if not overfit else 0     # num epochs through bad_supp
+    bad_epochs        = 1       if not overfit else 1     # num epochs through bad_supp
     bad_num_batches   = 25_000  if not overfit else 1     # random sampling is used
     do_bad            = True    if not overfit else True  # whether to train on bad_supp
     
-    good_epochs       = 3       if not overfit else 0     # num epochs through good_supp
+    good_epochs       = 3       if not overfit else 1     # num epochs through good_supp
     good_num_batches  = 25_000  if not overfit else 1     # random sampling is used
     do_good           = True    if not overfit else True  # whether to train on good_supp
     
