@@ -49,9 +49,9 @@ class MambaModel(Module):
         )
         
         # TODO: necessary?
-        for p in self.parameters():
-            if p.dim() > 1:
-                self.init.xavier_uniform_(p)
+        # for p in self.parameters():
+        #     if p.dim() > 1:
+        #         self.init.xavier_uniform_(p)
     
     # TODO: decide on how to do seq2seq
     def forward(self, x, u):

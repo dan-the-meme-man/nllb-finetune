@@ -318,6 +318,8 @@ def main():
         expand=expand,
         max_length=max_length
     )
+    print(model)
+    exit()
     print('Model loaded.')
     model.to(device)
     print(f'Model size on GPU: {memory_allocated(device=device) / 1024**3:.2f} GB.\n')
