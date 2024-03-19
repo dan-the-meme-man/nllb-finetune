@@ -33,12 +33,12 @@ class MambaModel(Module):
         self.max_length = max_length
         
         self.ssm = Sequential(
-            Mamba(
+            [Mamba(
                 d_model=d_model,
                 d_state=d_state,
                 d_conv=d_conv,
                 expand=expand
-            ) for _ in range(layers)
+            ) for _ in range(layers)]
         )
         
         # TODO: necessary?
