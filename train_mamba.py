@@ -344,6 +344,7 @@ def main():
     # output string for saving plots and checkpoints
     output_str = f'{batch_size}_{bad_epochs}_{bad_num_batches}_{good_epochs}'
     output_str += f'_{good_num_batches}_{train_epochs}_{train_num_batches}_{lr}_{weight_decay}'
+    output_str += f'_{tokenizer_type}_{layers}_{d_model}_{d_state}_{d_conv}_{expand}'
     if not path.exists('outputs'):
         mkdir('outputs')
     
