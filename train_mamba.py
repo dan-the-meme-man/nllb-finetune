@@ -96,11 +96,6 @@ def tokenize_batch(
                 [tokenizer.PieceToId('<' + t2c[lang_token] + '>')] +
                 tokenizer.EncodeAsIds(other_text)
             )
-            print(tokenized_batch)
-            print(tokenizer.DecodeIds(tokenized_batch))
-            print('<' + t2c[lang_token] + '>')
-            print(tokenizer.PieceToId('<' + t2c[lang_token] + '>'))
-            exit()
             
         # tokenized as if: hola que tal <aym> (same sentence in Aymara)
         # TODO: this is suitable for next token prediction, but maybe not correct for seq2seq
