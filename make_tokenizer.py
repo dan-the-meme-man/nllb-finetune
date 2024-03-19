@@ -1,5 +1,6 @@
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedTokenizer
 
+# mapping from lang_token to lang_code
 t2c = {
     'spa_Latn': 'es', # should be in there - note difference
     'ayr_Latn': 'aym', # should be in there - note difference
@@ -15,11 +16,25 @@ t2c = {
     'tar_Latn': 'tar'
 }
 
+# mapping from lang_code to lang_token
 c2t = {v: k for k, v in t2c.items()}
 
+# mapping from lang_token to id in HF tokenizers
 t2i = {}
 
-def make_tokenizer(tgt_lang, src_lang, max_length):
+def make_tokenizer(tgt_lang: str, src_lang: str, max_length: int) -> PreTrainedTokenizer:
+    
+    """
+        Returns a tokenizer for the specified target language and source language.
+        
+        Parameters:
+        - tgt_lang (str): target language
+        - src_lang (str): source language
+        - max_length (int): maximum length of the input sequence
+        
+        Returns:
+        - PreTrainedTokenizer: tokenizer for the specified target language and source language
+    """
     
     tokenizer = AutoTokenizer.from_pretrained(
         'facebook/nllb-200-distilled-600M',

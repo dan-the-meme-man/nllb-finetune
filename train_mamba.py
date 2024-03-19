@@ -4,15 +4,18 @@ from psutil import Process
 
 from torch.multiprocessing import freeze_support
 from torch.cuda import is_available, empty_cache, memory_allocated
-from torch import manual_seed, optim, no_grad, save
-
-from transformers import AutoConfig, AutoModelForSeq2SeqLM, AutoTokenizer
+from torch import manual_seed, optim, no_grad, save, tensor, Tensor
+from torch.nn import Module
 
 from matplotlib.pyplot import plot, figure, savefig, grid, legend, title
 
+import sentencepiece as spm
+
 from get_data_loader import get_data_loader
 
-from make_tokenizer import make_tokenizer, c2t
+from make_tokenizer import t2c
+
+from mamba_model import MambaModel
 
 def free():
     
@@ -70,16 +73,53 @@ def plot_losses(
         mkdir(plots_dir)
     savefig(path.join(plots_dir, f'{plot_title}_{output_str}.png'))
 
+def tokenize_batch(
+    tokenizer: spm.SentencePieceProcessor,
+    batch: tuple[list[str], list[str], str]
+) -> Tensor:
+        
+        """
+            Tokenize a batch of text.
+            
+            Parameters:
+            - tokenizer: spm.SentencePieceProcessor
+                Tokenizer.
+            - batch: list[str]
+                Batch of text.
+                
+            Returns:
+            - torch.Tensor
+                Tokenized batch.
+        """
+        
+        es_texts, other_texts, lang_token = batch # unpack batch and lang token
+        
+        assert len(es_texts) == len(other_texts) # ensure equal lengths
+        
+        tokenized_batch = []
+        for es_text, other_text in zip(es_texts, other_texts):
+            tokenized_batch.append(
+                tokenizer.EncodeAsIds(es_text) +
+                tokenizer.PieceToId('<' + t2c[lang_token] + '>') +
+                tokenizer.EncodeAsIds(other_text)
+            )
+            
+        # tokenized as if: hola que tal <aym> (same sentence in Aymara)
+        # TODO: this is suitable for next token prediction, but maybe not correct for seq2seq
+        # it could be fine, we'll need to have a generate method to test
+        
+        return tensor(tokenized_batch)
+
 def train(
     loader_name: str,
-    tokenizers: dict[str, AutoTokenizer],
+    tokenizer: spm.SentencePieceProcessor,
     batch_size: int,
     num_batches: int,
     max_length: int,
     lang_code: str,
     num_workers: int,
     epochs: int,
-    model: AutoModelForSeq2SeqLM,
+    model: Module,
     optimizer: optim.Optimizer,
     device: str,
     dev_num_batches: int,
@@ -156,18 +196,10 @@ def train(
         free()
         model.train() # ensure training mode
         for i, batch in enumerate(loader): # batch loop
-            es_texts, other_texts, lang_token = batch # unpack batch and lang token and tokenize
-            tokenized_batch = tokenizers[lang_token](
-                text=es_texts,
-                text_target=other_texts,
-                return_tensors='pt',
-                padding='max_length',
-                truncation=True,
-                max_length=max_length
-            )
+            tokenized_batch = tokenize_batch(tokenizer, batch)
             optimizer.zero_grad() # run training step
-            outputs = model(**tokenized_batch.to(device))
-            loss = outputs.loss
+            outputs = model(tokenized_batch.to(device))
+            loss = None # TODO: choose loss function and compute here
             loss.backward()
             optimizer.step()
             item = loss.item() # log and store loss
@@ -208,7 +240,7 @@ def train(
                 for dev_loader in dev_loaders: # dev loop
                     lang_token = dev_loader.dataset.lang_token # fetch lang token
                     for i, batch in enumerate(dev_loader): # dev batch loop
-                        outputs = model(**batch.to(device)) # pretokenized batches
+                        outputs = model(tokenized_batch.to(device)) # pretokenized batches
                         loss = outputs.loss
                         item = loss.item() # log and store loss
                         if i % log_freq == log_freq - 1:
@@ -254,7 +286,7 @@ def train(
 def main():
     
     """ HYPERPARAMETERS """ # TODO: search for optimal hyperparameters
-    overfit           = False                             # overfit on small data to test functionality
+    overfit           = True                             # overfit on small data to test functionality
     log_freq          = 100     if not overfit else 1     # frequency of logging in batches
     num_workers       = 1                                 # number of workers for data loader
     
@@ -264,6 +296,15 @@ def main():
     
     lr                = 1e-5                              # learning rate
     weight_decay      = 1e-2                              # weight decay
+    
+    tokenizer_type    = 'bpe'                             # sentencepiece model type
+    tokenizer_type    = 'unigram'
+    
+    layers            = 6       if not overfit else 2     # number of layers in Mamba
+    d_model           = 768     if not overfit else 16    # dimension of model
+    d_state           = 256     if not overfit else 16    # dimension of state
+    d_conv            = 4       if not overfit else 4     # dimension of convolution
+    expand            = 2       if not overfit else 2     # expansion factor
     
     bad_epochs        = 1       if not overfit else 0     # num epochs through bad_supp
     bad_num_batches   = 25_000  if not overfit else 1     # random sampling is used
@@ -286,17 +327,15 @@ def main():
     manual_seed(42) # set random seed for reproducibility
     
     print('\nLoading model...')
-    tokenizers = dict.fromkeys(c2t.values())
-    for lang_token in tokenizers: # load tokenizers for each language
-        tokenizers[lang_token] = make_tokenizer(lang_token, 'spa_Latn', max_length)
-    model_name = 'facebook/nllb-200-distilled-600M'
-    config = AutoConfig.from_pretrained(model_name)
-    config.vocab_size += 8 # 8 new special tokens for languages
-    config.max_position_embeddings = max_length # max length built-in to model
-    model = AutoModelForSeq2SeqLM.from_pretrained(
-        model_name,
-        config=config,
-        ignore_mismatched_sizes=True
+    tokenizer = spm.SentencePieceProcessor()
+    tokenizer.Load(path.join('vocab', tokenizer_type + '.model'))
+    model = MambaModel(
+        layers=layers,
+        d_model=d_model,
+        d_state=d_state,
+        d_conv=d_conv,
+        expand=expand,
+        max_length=max_length
     )
     print('Model loaded.')
     model.to(device)
@@ -309,7 +348,7 @@ def main():
         mkdir('outputs')
     
     optimizer = optim.AdamW( # AdamW optimizer
-        model.parameters(),
+        model.parameters(), # TODO: try different optimizers?
         lr=lr,
         eps=1e-8,
         betas=(0.9, 0.999),
@@ -321,7 +360,7 @@ def main():
         print('Training on bad supp...')
         bad_train_losses, bad_dev_losses = train(
             loader_name='bad_supp',
-            tokenizers=tokenizers,
+            tokenizer=tokenizer,
             batch_size=batch_size,
             num_batches=bad_num_batches,
             max_length=max_length,
@@ -347,7 +386,7 @@ def main():
         print('Training on good supp...')
         good_train_losses, good_dev_losses = train(
             loader_name='good_supp',
-            tokenizers=tokenizers,
+            tokenizer=tokenizer,
             batch_size=batch_size,
             num_batches=good_num_batches,
             max_length=max_length,
@@ -372,7 +411,7 @@ def main():
     print('Training on train...')
     train_train_losses, train_dev_losses = train(
         loader_name='train',
-        tokenizers=tokenizers,
+        tokenizer=tokenizer,
         batch_size=batch_size,
         num_batches=train_num_batches,
         max_length=max_length,

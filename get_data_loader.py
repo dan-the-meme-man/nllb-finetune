@@ -5,13 +5,46 @@ from random import seed, choice, choices
 from torch import manual_seed
 from torch.utils.data import DataLoader, Dataset
 
+from transformers.tokenization_utils_base import BatchEncoding
+
 from make_tokenizer import make_tokenizer, c2t
 
-seed(42)
+seed(42) # for reproducibility
 manual_seed(42)
 
+def collate_fn(batch):
+    
+    """
+        Removes the extra dimension that DataLoader adds.
+        
+        Parameters:
+        - batch (list[transformers.tokenization_utils_base.BatchEncoding]): The batch to process.
+        
+        Returns:
+        - transformers.tokenization_utils_base.BatchEncoding: The batch with the extra dimension removed.
+    """
+    
+    return batch[0]
+
 class TrainDataset(Dataset):
-    def __init__(self, split, files, batch_size, num_batches):
+    
+    """
+        This dataset encapsulates the training data.
+        
+        Parameters:
+        - split (str): The name of the split ('train' or 'good_supp' or 'bad_supp').
+        - files (list[str]): A list of file paths to the training data.
+        - batch_size (int): The number of examples in each batch.
+        - num_batches (int): The number of batches to load.
+    """
+    
+    def __init__(
+        self,
+        split: str,
+        files: list[str],
+        batch_size: int,
+        num_batches: int
+    ):
         
         super().__init__()
         
@@ -117,14 +150,55 @@ class TrainDataset(Dataset):
         
         del temp
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> tuple[list[str], list[str], str]:
+        
+        """
+            Returns the example at the given index: (es_texts, other_texts, lang_token).
+            
+            Parameters:
+            - idx (int): The index of the example to return.
+            
+            Returns:
+            - tuple[list[str], list[str], str]: The example at the given index.
+        """
+        
         return self.examples[idx]
 
-    def __len__(self):
+    def __len__(self) -> int:
+        
+        """
+            Returns the number of examples in the dataset.
+            
+            Returns:
+            - int: The number of examples in the dataset.
+        """
+        
         return len(self.examples)
 
 class SuppDataset(Dataset):
-    def __init__(self, split, files, batch_size, num_batches):
+    
+    """
+        This dataset encapsulates supplementary training data.
+        
+        Parameters:
+        - split: str
+            The name of the split ('good_supp' or 'bad_supp').
+        - files: list[str]
+            A list of file paths to the supplementary data.
+        - batch_size: int
+            The number of examples in each batch.
+        - num_batches: int
+            The number of batches to load.
+        
+    """
+    
+    def __init__(
+        self,
+        split: str,
+        files: list[str],
+        batch_size: int,
+        num_batches: int
+    ):
         
         super().__init__()
         
@@ -222,14 +296,52 @@ class SuppDataset(Dataset):
         
         del temp
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> tuple[list[str], list[str], str]:
+        
+        """
+            Returns the example at the given index: (es_texts, other_texts, lang_token).
+            
+            Parameters:
+            - idx (int): The index of the example to return.
+            
+            Returns:
+            - tuple[list[str], list[str], str]: The example at the given index.
+        """
+        
         return self.examples[idx]
 
-    def __len__(self):
+    def __len__(self) -> int:
+        
+        """
+            Returns the number of examples in the dataset.
+            
+            Returns:
+            - int: The number of examples in the dataset.
+        """
+        
         return len(self.examples)
     
 class DevSet(Dataset):
-    def __init__(self, batch_size, num_batches, max_length, lang_code, use_tgts):
+    
+    """
+        This dataset encapsulates the development set.
+        
+        Parameters:
+        - batch_size (int): The number of examples in each batch.
+        - num_batches (int): The number of batches to load.
+        - max_length (int): The maximum length of a sequence.
+        - lang_code (str): The language code of the target language.
+        - use_tgts (bool): Whether to use target sentences.
+    """
+    
+    def __init__(
+        self,
+        batch_size: int,
+        num_batches: int,
+        max_length: int,
+        lang_code: str,
+        use_tgts: bool
+    ):
         
         super().__init__()
         
@@ -300,16 +412,61 @@ class DevSet(Dataset):
             if num_batches is not None and i >= num_batches:
                 break
                 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> BatchEncoding:
+        
+        """
+            Returns the example at the given index.
+            
+            Parameters:
+            - idx (int): The index of the example to return.
+            
+            Returns
+            - transformers.tokenization_utils_base.BatchEncoding: The example at the given index.
+        """
+        
         return self.examples[idx]
 
-    def __len__(self):
+    def __len__(self) -> int:
+        
+        """
+            Returns the number of examples in the dataset.
+            
+            Returns:
+            - int: The number of examples in the dataset.
+        """
+        
         return len(self.examples)
-    
-def collate_fn(batch):
-    return batch[0]
 
-def get_data_loader(split, batch_size, num_batches, max_length, lang_code, shuffle, num_workers, use_tgts):
+def get_data_loader(
+    split: str,
+    batch_size: int,
+    num_batches: int,
+    max_length: int,
+    lang_code: str|None,
+    shuffle: bool,
+    num_workers: int,
+    use_tgts: bool
+) -> DataLoader|list[DataLoader]:
+    
+    """
+        Returns a DataLoader (or list of) for the specified split and language code.
+        Gives all languages if lang_code is None.
+        Returns a list of DataLoaders if split is 'dev' in order to keep languages separate.
+        
+        Parameters:
+        - split (str): The name of the split ('train' or 'good_supp' or 'bad_supp' or 'dev').
+        - batch_size (int): The number of examples in each batch.
+        - num_batches (int): The number of batches to load.
+        - max_length (int): The maximum length of a sequence.
+        - lang_code (str|None): The language code of the target language.
+        - shuffle (bool): Whether to shuffle the data.
+        - num_workers (int): The number of workers to use for loading data.
+        - use_tgts (bool): Whether to use target sentences.
+        
+        Returns:
+        - DataLoader|list[DataLoader]: The DataLoader (or list of) for the specified split and language code.
+    """
+    
     if split != 'dev':
         split_loc = path.join('proj_data_final', split)
         files = [path.join(split_loc, f) for f in listdir(split_loc) if f.endswith('.tsv')]

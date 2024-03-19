@@ -7,3 +7,5 @@ outputs/
 evaluate.py
 hf_example.py
 test_decode.py
+vocab/vocab.txt
+desktop.ini
