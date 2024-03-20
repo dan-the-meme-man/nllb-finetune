@@ -241,9 +241,6 @@ def train(
 
 def main():
     
-    # TODO: remove
-    print(f'Using {num_workers} workers.')
-    
     """ HYPERPARAMETERS """ # TODO: search for optimal hyperparameters
     overfit           = True                             # overfit on small data to test functionality
     log_freq          = 100     if not overfit else 1     # frequency of logging in batches
@@ -279,6 +276,9 @@ def main():
     #device = 'cpu'
     device = 'cuda' if is_available() else 'cpu'
     manual_seed(42) # set random seed for reproducibility
+    
+    # TODO: remove
+    print(f'Using {num_workers} workers.')
     
     print('\nLoading model...')
     tokenizers = dict.fromkeys(c2t.values())
