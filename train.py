@@ -257,7 +257,7 @@ def main():
     """ HYPERPARAMETERS """ # TODO: search for optimal hyperparameters
     overfit           = False                             # overfit on small data to test functionality
     log_freq          = 100     if not overfit else 1     # frequency of logging in batches
-    num_workers       = 1                                 # number of workers for data loader
+    num_workers       = 2                                 # number of workers for data loader
     
     batch_size        = 16      if not overfit else 2     # batch size
     max_length        = 384     if not overfit else 16    # maximum length of input sequences
