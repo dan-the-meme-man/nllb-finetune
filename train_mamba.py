@@ -1,5 +1,7 @@
 from os import path, mkdir
 from gc import collect
+from time import time
+from datetime import timedelta
 from psutil import Process
 
 from torch.multiprocessing import freeze_support
@@ -174,6 +176,7 @@ def train(
     dev_losses = []
     
     for epoch in range(epochs): # epoch loop
+        epoch_start = time()
         print(f'Epoch {epoch+1} starting...')
         free()
         model.train() # ensure training mode
@@ -196,7 +199,7 @@ def train(
             empty_cache()
         optimizer.zero_grad() # free memory and log
         free()
-        print(f'Epoch {epoch+1} train complete.\n')
+        print(f'Epoch {epoch+1} train complete in {str(timedelta(seconds=time()-epoch_start))}.\n')
         
         if do_dev: # evaluate on dev
             print('Loading dev data...') # retrieve dev data loader
@@ -305,6 +308,7 @@ def main():
     do_dev            = True    if not overfit else True  # whether to evaluate on dev (ignored for supp data)
     ckpt              = True    if not overfit else False # whether to save checkpoints
     
+    start = time()
     freeze_support() # parallelism for Windows
     #device = 'cpu'
     device = 'cuda' if is_available() else 'cpu'
@@ -420,7 +424,7 @@ def main():
     
     plot_losses(bad_train_losses, good_train_losses, train_train_losses, 'train')
     plot_losses(bad_dev_losses, good_dev_losses, train_dev_losses, 'dev')
-    print('Done.\n')
+    print(f'Done in {str(timedelta(seconds=time()-start))}\n')
 
 if __name__ == '__main__':
     main()
