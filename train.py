@@ -269,15 +269,14 @@ def main():
     bad_num_batches   = int(100_000 / batch_size) if not overfit else 1  # random sampling is used
     good_num_batches  = int(100_000 / batch_size) if not overfit else 1  # random sampling is used
     train_num_batches = int(300_000 / batch_size) if not overfit else 20
-    # random sampling for train_num_batches IF train_num_batches * batch_size >= 210368
+    # random sampling for train_num_batches IF train_num_batches * batch_size > 210368
     
     start = time()
     freeze_support() # parallelism for Windows
     #device = 'cpu'
     device = 'cuda' if is_available() else 'cpu'
     manual_seed(42) # set random seed for reproducibility
-    
-    # TODO: remove
+
     print(f'Using {num_workers} workers.')
     
     print('\nLoading model...')

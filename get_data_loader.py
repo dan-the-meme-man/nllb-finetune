@@ -372,7 +372,7 @@ class SuppDataset(Dataset):
         """
         
         return len(self.examples)
-    
+
 class DevSet(Dataset):
     
     """
