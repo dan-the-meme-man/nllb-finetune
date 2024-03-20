@@ -164,7 +164,8 @@ def train(
         lang_code=lang_code,
         shuffle=True,
         num_workers=num_workers,
-        use_tgts=True # ignored
+        use_tgts=True, # ignored
+        get_tokenized=False # ignored
     )
     free()
     print('Data loaded.\n')
@@ -208,7 +209,8 @@ def train(
                 lang_code=lang_code,
                 shuffle=False, # ignored
                 num_workers=num_workers,
-                use_tgts=True # for dev loss
+                use_tgts=True, # for dev loss
+                get_tokenized=False
             )
             free()
             print('Dev data loaded.\n')

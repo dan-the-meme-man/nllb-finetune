@@ -36,14 +36,10 @@ def plot_losses(
         Plot losses for each split.
         
         Parameters:
-        - bad: list
-            Losses for bad_supp.
-        - good: list
-            Losses for good_supp.
-        - train: list
-            Losses for train.
-        - plot_title: str
-            Title of the plot.
+        - bad (list): Losses for bad_supp.
+        - good (list): Losses for good_supp.
+        - train (list): Losses for train.
+        - plot_title (str): Title of the plot.
     """
     
     figure()
@@ -86,51 +82,34 @@ def train(
     ckpt: bool,
     output_str: str,
     do_dev: bool,
-    log_freq: int
-):
+    log_freq: int,
+    get_tokenized: bool
+) -> tuple[list, list]:
     
     """
         Train the model on the specified data loader.
         
         Parameters:
-        - loader_name: str
-            Name of the data loader. One of 'bad_supp', 'good_supp', 'train'.
-        - tokenizers: dict[str, AutoTokenizer]
-            Tokenizers for each language.
-        - batch_size: int
-            Batch size.
-        - num_batches: int
-            Number of batches to train on.
-        - max_length: int
-            Maximum length of the input sequences.
-        - lang_code: str
-            Language code. Set to None for all languages.
-        - num_workers: int
-            Number of workers for the data loader.
-        - epochs: int
-            Number of epochs.
-        - model: AutoModelForSeq2SeqLM
-            Model to train.
-        - optimizer: optim.Optimizer
-            Optimizer.
-        - device: str
-            Device.
-        - dev_num_batches: int
-            Number of batches to evaluate on.
-        - ckpt: bool
-            Whether to save checkpoints.
-        - output_str: str
-            Output string.
-        - do_dev: bool
-            Whether to evaluate on dev. Ignored except for 'train' split.
-        - log_freq: int
-            Frequency of logging in batches.
+        - loader_name (str): Name of the data loader. One of 'bad_supp', 'good_supp', 'train'.
+        - tokenizers (dict[str, AutoTokenizer]): Tokenizers for each language.
+        - batch_size: (int): Batch size.
+        - num_batches (int): Number of batches to train on.
+        - max_length: (int): Maximum length of the input sequences.
+        - lang_code (str): Language code. Set to None for all languages.
+        - num_workers (int): Number of workers for the data loader.
+        - epochs: (int): Number of epochs.
+        - model (AutoModelForSeq2SeqLM): Model to train.
+        - optimizer (optim.Optimizer): Optimizer.
+        - device (str): Device.
+        - dev_num_batches (int): Number of batches to evaluate on.
+        - ckpt (bool): Whether to save checkpoints.
+        - output_str (str): Output string.
+        - do_dev (bool): Whether to evaluate on dev. Ignored except for 'train' split.
+        - log_freq (int): Frequency of logging in batches.
+        - get_tokenized (bool): Whether to return tokenized data.
             
         Returns:
-        - list
-            Train losses.
-        - list
-            Dev losses.
+        - tuple[list, list]: Train losses and dev losses.
     """
 
     print('Loading data...') # retrieve appropriate data loader
@@ -143,7 +122,8 @@ def train(
         lang_code=lang_code,
         shuffle=True,
         num_workers=num_workers,
-        use_tgts=True # ignored
+        use_tgts=True, # ignored
+        get_tokenized=get_tokenized
     )
     free()
     print('Data loaded.\n')
@@ -156,15 +136,18 @@ def train(
         free()
         model.train() # ensure training mode
         for i, batch in enumerate(loader): # batch loop
-            es_texts, other_texts, lang_token = batch # unpack batch and lang token and tokenize
-            tokenized_batch = tokenizers[lang_token](
-                text=es_texts,
-                text_target=other_texts,
-                return_tensors='pt',
-                padding='max_length',
-                truncation=True,
-                max_length=max_length
-            )
+            if not get_tokenized:
+                es_texts, other_texts, lang_token = batch # unpack batch and lang token and tokenize
+                tokenized_batch = tokenizers[lang_token](
+                    text=es_texts,
+                    text_target=other_texts,
+                    return_tensors='pt',
+                    padding='max_length',
+                    truncation=True,
+                    max_length=max_length
+                )
+            else:
+                tokenized_batch = batch
             optimizer.zero_grad() # run training step
             outputs = model(**tokenized_batch.to(device))
             loss = outputs.loss
@@ -195,7 +178,8 @@ def train(
                 lang_code=lang_code,
                 shuffle=False, # ignored
                 num_workers=num_workers,
-                use_tgts=True # for dev loss
+                use_tgts=True, # for dev loss
+                get_tokenized=get_tokenized # ignored
             )
             free()
             print('Dev data loaded.\n')
@@ -258,6 +242,7 @@ def main():
     overfit           = False                             # overfit on small data to test functionality
     log_freq          = 100     if not overfit else 1     # frequency of logging in batches
     num_workers       = 2                                 # number of workers for data loader
+    get_tokenized     = True                              # whether to get tokenized data
     
     batch_size        = 16      if not overfit else 2     # batch size
     max_length        = 384     if not overfit else 16    # maximum length of input sequences
@@ -336,7 +321,8 @@ def main():
             ckpt=ckpt,
             output_str=output_str,
             do_dev=False,
-            log_freq=log_freq
+            log_freq=log_freq,
+            get_tokenized=get_tokenized
         )
         print('Training on bad supp complete.\n')
     else: # let plotting proceed regardless
@@ -362,7 +348,8 @@ def main():
             ckpt=ckpt,
             output_str=output_str,
             do_dev=False,
-            log_freq=log_freq
+            log_freq=log_freq,
+            get_tokenized=get_tokenized
         )
         print('Training on good supp complete.\n')
     else: # let plotting proceed regardless
@@ -387,7 +374,8 @@ def main():
         ckpt=ckpt,
         output_str=output_str,
         do_dev=do_dev,
-        log_freq=log_freq
+        log_freq=log_freq,
+        get_tokenized=get_tokenized
     )
     print('Training on train complete.\n')
     

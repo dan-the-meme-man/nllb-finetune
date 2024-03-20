@@ -45,10 +45,20 @@ class TrainDataset(Dataset):
         split: str,
         files: list[str],
         batch_size: int,
-        num_batches: int
+        num_batches: int,
+        get_tokenized: bool,
+        max_length: int
     ):
         
         super().__init__()
+        
+        # tokenize during getitem or not
+        self.get_tokenized = get_tokenized
+        if self.get_tokenized:
+            self.tokenizers = dict.fromkeys(c2t.values())
+            self.max_length = max_length
+            for lang_token in self.tokenizers:
+                self.tokenizers[lang_token] = make_tokenizer(lang_token, 'spa_Latn', self.max_length)
         
         # list of tokenized batches, each batch is the same target language
         # but different batches may differ in target language
@@ -152,19 +162,34 @@ class TrainDataset(Dataset):
         
         del temp
 
-    def __getitem__(self, idx) -> tuple[list[str], list[str], str]:
+    def __getitem__(self, idx) -> Union[tuple[list[str], list[str], str], BatchEncoding]:
         
         """
-            Returns the example at the given index: (es_texts, other_texts, lang_token).
+            Returns the batch at the given index: (es_texts, other_texts, lang_token).
             
             Parameters:
-            - idx (int): The index of the example to return.
+            - idx (int): The index of the batch to return.
             
             Returns:
-            - tuple[list[str], list[str], str]: The example at the given index.
+            - tuple[list[str], list[str], str]: The batch at the given index.
+            A list of Spanish sentences, a list of sentences in a target language, and the target language token.
         """
         
-        return self.examples[idx]
+        if not self.get_tokenized:
+            return self.examples[idx]
+        
+        es_texts, other_texts, lang_token = self.examples[idx]
+        
+        tokenized_batch = self.tokenizers[lang_token](
+            text=es_texts,
+            text_target=other_texts,
+            return_tensors='pt',
+            padding='max_length',
+            truncation=True,
+            max_length=self.max_length
+        )
+
+        return tokenized_batch
 
     def __len__(self) -> int:
         
@@ -199,10 +224,20 @@ class SuppDataset(Dataset):
         split: str,
         files: list[str],
         batch_size: int,
-        num_batches: int
+        num_batches: int,
+        get_tokenized: bool,
+        max_length: int
     ):
         
         super().__init__()
+        
+        # tokenize during getitem or not
+        self.get_tokenized = get_tokenized
+        if self.get_tokenized:
+            self.tokenizers = dict.fromkeys(c2t.values())
+            self.max_length = max_length
+            for lang_token in self.tokenizers:
+                self.tokenizers[lang_token] = make_tokenizer(lang_token, 'spa_Latn', self.max_length)
         
         # list of tokenized batches, each batch is the same target language
         # but different batches may differ in target language
@@ -290,7 +325,7 @@ class SuppDataset(Dataset):
             # randomly select a language based on pmf
             lang_token = choices(lang_token_list, weights=weights)[0]
             
-            # randomly select an example of that language
+            # randomly select a batch of examples of that language
             self.examples.append(choice(temp[lang_token]))
             
             if i % 1000 == 999:
@@ -298,19 +333,34 @@ class SuppDataset(Dataset):
         
         del temp
 
-    def __getitem__(self, idx: int) -> tuple[list[str], list[str], str]:
+    def __getitem__(self, idx: int) -> Union[tuple[list[str], list[str], str], BatchEncoding]:
         
         """
-            Returns the example at the given index: (es_texts, other_texts, lang_token).
+            Returns the batch at the given index: (es_texts, other_texts, lang_token).
             
             Parameters:
-            - idx (int): The index of the example to return.
+            - idx (int): The index of the batch to return.
             
             Returns:
-            - tuple[list[str], list[str], str]: The example at the given index.
+            - tuple[list[str], list[str], str]: The batch at the given index.
+            A list of Spanish sentences, a list of sentences in a target language, and the target language token.
         """
         
-        return self.examples[idx]
+        if not self.get_tokenized:
+            return self.examples[idx]
+        
+        es_texts, other_texts, lang_token = self.examples[idx]
+        
+        tokenized_batch = self.tokenizers[lang_token](
+            text=es_texts,
+            text_target=other_texts,
+            return_tensors='pt',
+            padding='max_length',
+            truncation=True,
+            max_length=self.max_length
+        )
+
+        return tokenized_batch
 
     def __len__(self) -> int:
         
@@ -447,7 +497,8 @@ def get_data_loader(
     lang_code: Union[str, None],
     shuffle: bool,
     num_workers: int,
-    use_tgts: bool
+    use_tgts: bool,
+    get_tokenized: bool
 ) -> Union[DataLoader, list[DataLoader]]:
     
     """
@@ -476,7 +527,7 @@ def get_data_loader(
             files = [f for f in files if lang_code in f]
         if split != 'train':
             return DataLoader(
-                SuppDataset(split, files, batch_size, num_batches),
+                SuppDataset(split, files, batch_size, num_batches, get_tokenized, max_length),
                 batch_size=1, # batches are already created, so just load one at a time
                 shuffle=shuffle,
                 num_workers=num_workers,
@@ -484,7 +535,7 @@ def get_data_loader(
             )
         else:
             return DataLoader(
-                TrainDataset(split, files, batch_size, num_batches),
+                TrainDataset(split, files, batch_size, num_batches, get_tokenized, max_length),
                 batch_size=1, # batches are already created, so just load one at a time
                 shuffle=shuffle,
                 num_workers=num_workers,
