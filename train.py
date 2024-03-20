@@ -389,8 +389,8 @@ def main():
     # splits are color-coded
     print('Plotting losses...')
     
-    plot_losses(bad_train_losses, good_train_losses, train_train_losses, 'train')
-    plot_losses(bad_dev_losses, good_dev_losses, train_dev_losses, 'dev')
+    plot_losses(bad_train_losses, good_train_losses, train_train_losses, 'train', output_str)
+    plot_losses(bad_dev_losses, good_dev_losses, train_dev_losses, 'dev', output_str)
     print(f'Done in {str(timedelta(seconds=time()-start))}\n')
 
 if __name__ == '__main__':
