@@ -241,11 +241,14 @@ def train(
 
 def main():
     
+    # TODO: remove
+    print(f'Using {num_workers} workers.')
+    
     """ HYPERPARAMETERS """ # TODO: search for optimal hyperparameters
     overfit           = True                             # overfit on small data to test functionality
     log_freq          = 100     if not overfit else 1     # frequency of logging in batches
-    num_workers       = 1                                 # number of workers for data loader
-    get_tokenized     = False                              # whether to get tokenized data
+    num_workers       = 2                                 # number of workers for data loader
+    get_tokenized     = True                             # whether to get tokenized data
     
     batch_size        = 16      if not overfit else 2     # batch size
     max_length        = 384     if not overfit else 16    # maximum length of input sequences
