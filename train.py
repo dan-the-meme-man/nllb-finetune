@@ -242,7 +242,7 @@ def train(
 def main():
     
     """ HYPERPARAMETERS """ # TODO: search for optimal hyperparameters
-    overfit           = True                             # overfit on small data to test functionality
+    overfit           = False                             # overfit on small data to test functionality
     log_freq          = 100     if not overfit else 1     # frequency of logging in batches
     num_workers       = 2                                 # number of workers for data loader
     get_tokenized     = True                              # whether to get tokenized data

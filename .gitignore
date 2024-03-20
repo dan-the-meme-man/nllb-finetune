@@ -10,3 +10,4 @@ test_decode.py
 vocab/vocab.txt
 desktop.ini
 jb_mamba.sh
+*.o
