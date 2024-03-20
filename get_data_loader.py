@@ -148,7 +148,7 @@ class TrainDataset(Dataset):
             self.examples.append(choice(temp[lang_token]))
             
             if len(self.examples) % 1000 == 0:
-                print(f'Loaded {len(self.examples)}/{num_batches} batches of {split}.')
+                print(f'Loaded {i}/{num_batches} batches of {split}.')
         
         del temp
 
