@@ -32,9 +32,9 @@ def main():
     
     overfit           = True
     num_workers       = 1
-    batch_size        = 8     if not overfit else 1
+    batch_size        = 8    if not overfit else 1
     dev_num_batches   = None if not overfit else 5 # None for full dev set
-    max_length        = 256
+    max_length        = 384
     lang_code         = None if not overfit else 'aym' # None for all languages
     
     print('Loading dev data...')
@@ -46,7 +46,8 @@ def main():
         lang_code=lang_code,
         shuffle=False, # ignored
         num_workers=num_workers,
-        use_tgts=False # needed to do decoding
+        use_tgts=False, # needed to do decoding
+        get_tokenized=False
     )
     print('Dev data loaded.\n')
     
@@ -56,9 +57,11 @@ def main():
 
     for ckpt in os.listdir(os.path.join('outputs', 'ckpts')):
         
+        print(f'Loading checkpoint {ckpt}...')
         file_path = os.path.join('outputs', 'ckpts', ckpt)
         checkpoint = load(file_path)
         model.load_state_dict(checkpoint['model_state_dict'])
+        print(f'Checkpoint {ckpt} loaded.\n')
         
         model_tr_dir = os.path.join(tr_dir, ckpt)
         if not os.path.exists(model_tr_dir):
