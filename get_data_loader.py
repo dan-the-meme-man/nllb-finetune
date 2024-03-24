@@ -28,6 +28,152 @@ def collate_fn(batch):
     
     return batch[0]
 
+class NoSampleDataset(Dataset):
+    
+    """
+        This dataset encapsulates the training data.
+        
+        Parameters:
+        - split (str): The name of the split ('train' or 'good_supp' or 'bad_supp').
+        - files (list[str]): A list of file paths to the training data.
+        - batch_size (int): The number of examples in each batch.
+        - num_batches (int): The number of batches to load.
+    """
+    
+    def __init__(
+        self,
+        split: str,
+        files: list[str],
+        batch_size: int,
+        num_batches: int,
+        get_tokenized: bool,
+        max_length: int
+    ):
+        
+        super().__init__()
+        
+        # tokenize during getitem or not
+        self.get_tokenized = get_tokenized
+        if self.get_tokenized:
+            self.tokenizers = dict.fromkeys(c2t.values())
+            self.max_length = max_length
+            for lang_token in self.tokenizers:
+                self.tokenizers[lang_token] = make_tokenizer(lang_token, 'spa_Latn', self.max_length)
+        
+        # list of tokenized batches, each batch is the same target language
+        # but different batches may differ in target language
+        # since they are pre-tokenized, they are ready to be used in training without worrying
+        # about which tokenizer to use
+        self.examples = []
+        
+        # lists to be sampled from later to build self.examples
+        temp = dict.fromkeys(c2t.values())
+        temp.pop('spa_Latn', None)
+        for lang_token in temp:
+            temp[lang_token] = []
+        
+        # process each file (language) and add list of examples to temp
+        for file in files:
+
+            # tokenizer from spanish to this language
+            lang_token = c2t[path.basename(file).split('.')[0]]
+            # tokenizer = tokenizers[lang_token]
+            # assert tokenizer._src_lang == 'spa_Latn'
+            # assert tokenizer.tgt_lang == lang_token
+            
+            # lists of spanish and other language sentences
+            es_batch = []
+            other_batch = []
+            
+            lines = open(file, 'r', encoding='utf-8').readlines()
+            for i in range(len(lines)):
+                
+                strip_line = lines[i].strip()
+                if not strip_line:
+                    continue
+                split_line = strip_line.split('\t')
+                if len(split_line) != 2:
+                    continue
+                
+                # accumulate a batch of es sentences and other language sentences
+                es_batch.append(split_line[0].strip())
+                other_batch.append(split_line[1].strip())
+                
+                if len(es_batch) == batch_size or i == len(lines) - 1:
+                    
+                    assert len(es_batch) == len(other_batch)
+                    
+                    # tokenize a batch and append to temp dict
+                    # tokenized = tokenizers[lang_token](
+                    #     text = es_batch,
+                    #     text_target = other_batch,
+                    #     return_tensors = 'pt',
+                    #     padding = 'max_length',
+                    #     truncation = True,
+                    #     max_length = max_length
+                    # )
+                    # temp[lang_token].append(tokenized)
+                    temp[lang_token].append((es_batch, other_batch, lang_token))
+                    
+                    # clear batch accumulation
+                    es_batch = []
+                    other_batch = []
+                    
+                    # no way we could need this much data
+                    if i >= num_batches * batch_size:
+                        break
+                    
+            print(f'Loaded {len(temp[lang_token]) * batch_size}/{len(lines)} lines of {lang_token}.')
+        
+        # ensure every example is used at least once if num_batches is large enough 
+        for lang_token in temp:
+            for example in temp[lang_token]:
+                self.examples.append(example)
+                if len(self.examples) % 10000 == 0:
+                    print(f'Loaded {len(self.examples)}/{num_batches} batches of {split}.')
+        
+        del temp
+
+    def __getitem__(self, idx) -> Union[tuple[list[str], list[str], str], BatchEncoding]:
+        
+        """
+            Returns the batch at the given index: (es_texts, other_texts, lang_token).
+            
+            Parameters:
+            - idx (int): The index of the batch to return.
+            
+            Returns:
+            - tuple[list[str], list[str], str]: The batch at the given index.
+            A list of Spanish sentences, a list of sentences in a target language, and the target language token.
+        """
+        
+        if not self.get_tokenized:
+            return self.examples[idx]
+        
+        es_texts, other_texts, lang_token = self.examples[idx]
+        
+        tokenized_batch = self.tokenizers[lang_token](
+            text=es_texts,
+            text_target=other_texts,
+            return_tensors='pt',
+            padding='max_length',
+            truncation=True,
+            max_length=self.max_length
+        )
+
+        return tokenized_batch
+
+    def __len__(self) -> int:
+        
+        """
+            Returns the number of examples in the dataset.
+            
+            Returns:
+            - int: The number of examples in the dataset.
+        """
+        
+        return len(self.examples)
+
 class TrainDataset(Dataset):
     
     """
@@ -418,6 +564,8 @@ class DevSet(Dataset):
         es_batch = []
         if use_tgts:
             other_batch = []
+            
+        # count = 0
         
         for i in range(len(lines)):
             
@@ -448,6 +596,8 @@ class DevSet(Dataset):
                             truncation = True,
                             max_length = max_length
                         )
+                        # if self.tokenizer.unk_token_id in tokenized['labels']:
+                        #     count += 1
                     else:
                         tokenized = (es_batch, other_batch)
                 else:
@@ -459,6 +609,8 @@ class DevSet(Dataset):
                             truncation = True,
                             max_length = max_length
                         )
+                        # if self.tokenizer.unk_token_id in tokenized['labels']:
+                        #     count += 1
                     else:
                         tokenized = es_batch
                 self.examples.append(tokenized)
@@ -471,6 +623,8 @@ class DevSet(Dataset):
                 print(f'Loaded {i+1}/{len(lines)} lines for {self.lang_token}.')
             if num_batches is not None and i >= num_batches:
                 break
+            
+        # print(lang_code, str(count), str(len(self.examples)))
                 
     def __getitem__(self, idx) -> Union[BatchEncoding, tuple[list[str], list[str]], list[str]]:
         

@@ -8,6 +8,7 @@ from torch import no_grad, load, manual_seed
 from transformers import AutoConfig, AutoModelForSeq2SeqLM
 
 from get_data_loader import get_data_loader
+from make_tokenizer import make_tokenizer, c2t, t2i
 
 def main():
     
@@ -84,7 +85,7 @@ def main():
                     
                     outputs = model.generate(
                         **batch.to(device),
-                        forced_bos_token_id=tokenizer.lang_code_to_id[lang_token],
+                        forced_bos_token_id=t2i[lang_token],
                         max_length=max_length,
                         num_beams=4,
                         no_repeat_ngram_size=2,
