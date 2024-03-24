@@ -384,6 +384,7 @@ class DevSet(Dataset):
         - max_length (int): The maximum length of a sequence.
         - lang_code (str): The language code of the target language.
         - use_tgts (bool): Whether to use target sentences.
+        - get_tokenized (bool): Whether to tokenize the data.
     """
     
     def __init__(
@@ -392,7 +393,8 @@ class DevSet(Dataset):
         num_batches: int,
         max_length: int,
         lang_code: str,
-        use_tgts: bool
+        use_tgts: bool,
+        get_tokenized: bool
     ):
         
         super().__init__()
@@ -437,22 +439,28 @@ class DevSet(Dataset):
                 
                 # tokenize a batch and append to temp dict
                 if use_tgts:
-                    tokenized = self.tokenizer(
-                        text = es_batch,
-                        text_target = other_batch,
-                        return_tensors = 'pt',
-                        padding = 'max_length',
-                        truncation = True,
-                        max_length = max_length
-                    )
+                    if get_tokenized:
+                        tokenized = self.tokenizer(
+                            text = es_batch,
+                            text_target = other_batch,
+                            return_tensors = 'pt',
+                            padding = 'max_length',
+                            truncation = True,
+                            max_length = max_length
+                        )
+                    else:
+                        tokenized = (es_batch, other_batch)
                 else:
-                    tokenized = self.tokenizer(
-                        text = es_batch,
-                        return_tensors = 'pt',
-                        padding = 'max_length',
-                        truncation = True,
-                        max_length = max_length
-                    )
+                    if get_tokenized:
+                        tokenized = self.tokenizer(
+                            text = es_batch,
+                            return_tensors = 'pt',
+                            padding = 'max_length',
+                            truncation = True,
+                            max_length = max_length
+                        )
+                    else:
+                        tokenized = es_batch
                 self.examples.append(tokenized)
                 
                 es_batch = []
@@ -464,7 +472,7 @@ class DevSet(Dataset):
             if num_batches is not None and i >= num_batches:
                 break
                 
-    def __getitem__(self, idx) -> BatchEncoding:
+    def __getitem__(self, idx) -> Union[BatchEncoding, tuple[list[str], list[str]], list[str]]:
         
         """
             Returns the example at the given index.
@@ -473,7 +481,8 @@ class DevSet(Dataset):
             - idx (int): The index of the example to return.
             
             Returns
-            - transformers.tokenization_utils_base.BatchEncoding: The example at the given index.
+            - Union[transformers.tokenization_utils_base.BatchEncoding, tuple[list[str], list[str]], list[str]]:
+                The example at the given index.
         """
         
         return self.examples[idx]
@@ -544,7 +553,7 @@ def get_data_loader(
     else:
         if lang_code is not None:
             return [DataLoader(
-                DevSet(batch_size, num_batches, max_length, lang_code, use_tgts),
+                DevSet(batch_size, num_batches, max_length, lang_code, use_tgts, get_tokenized),
                 batch_size=1, # batches are already created, so just load one at a time
                 shuffle=False,
                 num_workers=num_workers,
@@ -552,7 +561,7 @@ def get_data_loader(
             )]
         else:
             return [DataLoader(
-                DevSet(batch_size, num_batches, max_length, l, use_tgts),
+                DevSet(batch_size, num_batches, max_length, l, use_tgts, get_tokenized),
                 batch_size=1, # batches are already created, so just load one at a time
                 shuffle=False,
                 num_workers=num_workers,

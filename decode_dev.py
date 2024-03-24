@@ -27,10 +27,10 @@ def main():
         model_name,
         config=config,
         ignore_mismatched_sizes=True
-    )
+    ).to(device)
     print('Model loaded.\n')
     
-    overfit           = True
+    overfit           = False
     num_workers       = 1
     batch_size        = 8    if not overfit else 1
     dev_num_batches   = None if not overfit else 5 # None for full dev set
@@ -47,7 +47,7 @@ def main():
         shuffle=False, # ignored
         num_workers=num_workers,
         use_tgts=False, # needed to do decoding
-        get_tokenized=False
+        get_tokenized=True
     )
     print('Dev data loaded.\n')
     
@@ -63,7 +63,7 @@ def main():
         model.load_state_dict(checkpoint['model_state_dict'])
         print(f'Checkpoint {ckpt} loaded.\n')
         
-        model_tr_dir = os.path.join(tr_dir, ckpt)
+        model_tr_dir = os.path.join(tr_dir, ckpt[:-4])
         if not os.path.exists(model_tr_dir):
             os.mkdir(model_tr_dir)
         
@@ -78,17 +78,24 @@ def main():
                 translations = []
                 
                 for i, batch in enumerate(dev_loader):
+                    
+                    # print(batch)
+                    # exit()
+                    
                     outputs = model.generate(
                         **batch.to(device),
                         forced_bos_token_id=tokenizer.lang_code_to_id[lang_token],
                         max_length=max_length,
-                        # num_beams=4,
-                        # no_repeat_ngram_size=2,
-                        # early_stopping=True
+                        num_beams=4,
+                        no_repeat_ngram_size=2,
+                        early_stopping=True
                     )
                     translations.extend(tokenizer.batch_decode(outputs, skip_special_tokens=True))
                     
-                loc = os.path.join(model_tr_dir, {lang_code} + '.txt')
+                    if i % 100 == 0:
+                        print(f'{i} batches decoded for {lang_code}.')
+                    
+                loc = os.path.join(model_tr_dir, lang_code + '.txt')
                     
                 with open(loc, 'w+', encoding='utf-8') as f:
                     for t in translations:

@@ -11,3 +11,4 @@ vocab/vocab.txt
 desktop.ini
 jb_mamba.sh
 *.o
+*.sh
