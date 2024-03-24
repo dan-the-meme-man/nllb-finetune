@@ -55,7 +55,7 @@ print(f'Checkpoint {ckpt} loaded.\n')
 batch = tokenizer(
     ['Solo dura una semana.'],
     return_tensors='pt',
-    padding='max_length',
+    padding='longest',
     max_length=max_length,
     truncation=True
 )

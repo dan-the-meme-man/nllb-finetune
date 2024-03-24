@@ -108,7 +108,7 @@ class NoSampleDataset(Dataset):
                     #     text = es_batch,
                     #     text_target = other_batch,
                     #     return_tensors = 'pt',
-                    #     padding = 'max_length',
+                    #     padding = 'longest',
                     #     truncation = True,
                     #     max_length = max_length
                     # )
@@ -156,7 +156,7 @@ class NoSampleDataset(Dataset):
             text=es_texts,
             text_target=other_texts,
             return_tensors='pt',
-            padding='max_length',
+            padding='longest',
             truncation=True,
             max_length=self.max_length
         )
@@ -254,7 +254,7 @@ class TrainDataset(Dataset):
                     #     text = es_batch,
                     #     text_target = other_batch,
                     #     return_tensors = 'pt',
-                    #     padding = 'max_length',
+                    #     padding = 'longest',
                     #     truncation = True,
                     #     max_length = max_length
                     # )
@@ -284,12 +284,12 @@ class TrainDataset(Dataset):
         probs = {lang_token: probs[lang_token] / total for lang_token in probs}
         
         # ensure every example is used at least once if num_batches is large enough 
-        if num_batches * batch_size >= 210368:
-            for lang_token in temp:
-                for example in temp[lang_token]:
-                    self.examples.append(example)
-                    if len(self.examples) % 10000 == 0:
-                        print(f'Loaded {len(self.examples)}/{num_batches} batches of {split}.')
+        # if num_batches * batch_size >= 210368:
+        #     for lang_token in temp:
+        #         for example in temp[lang_token]:
+        #             self.examples.append(example)
+        #             if len(self.examples) % 10000 == 0:
+        #                 print(f'Loaded {len(self.examples)}/{num_batches} batches of {split}.')
         
         # sample from pmf until num_batches examples are in self.examples
         lang_token_list = list(c2t.values())
@@ -330,7 +330,7 @@ class TrainDataset(Dataset):
             text=es_texts,
             text_target=other_texts,
             return_tensors='pt',
-            padding='max_length',
+            padding='longest',
             truncation=True,
             max_length=self.max_length
         )
@@ -433,7 +433,7 @@ class SuppDataset(Dataset):
                     #     text = es_batch,
                     #     text_target = other_batch,
                     #     return_tensors = 'pt',
-                    #     padding = 'max_length',
+                    #     padding = 'longest',
                     #     truncation = True,
                     #     max_length = max_length
                     # )
@@ -501,7 +501,7 @@ class SuppDataset(Dataset):
             text=es_texts,
             text_target=other_texts,
             return_tensors='pt',
-            padding='max_length',
+            padding='longest',
             truncation=True,
             max_length=self.max_length
         )
@@ -592,7 +592,7 @@ class DevSet(Dataset):
                             text = es_batch,
                             text_target = other_batch,
                             return_tensors = 'pt',
-                            padding = 'max_length',
+                            padding = 'longest',
                             truncation = True,
                             max_length = max_length
                         )
@@ -605,7 +605,7 @@ class DevSet(Dataset):
                         tokenized = self.tokenizer(
                             text = es_batch,
                             return_tensors = 'pt',
-                            padding = 'max_length',
+                            padding = 'longest',
                             truncation = True,
                             max_length = max_length
                         )

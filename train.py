@@ -113,27 +113,28 @@ def train(
         Returns:
         - tuple[list, list]: Train losses and dev losses.
     """
-
-    print('Loading data...') # retrieve appropriate data loader
-    free()
-    loader = get_data_loader(
-        split=loader_name,
-        batch_size=batch_size,
-        num_batches=num_batches,
-        max_length=max_length,
-        lang_code=lang_code,
-        shuffle=True,
-        num_workers=num_workers,
-        use_tgts=True, # ignored
-        get_tokenized=get_tokenized
-    )
-    free()
-    print('Data loaded.\n')
     
     train_losses = [] # set up for plotting
     dev_losses = []
     
     for epoch in range(epochs): # epoch loop
+        
+        print('Loading data...') # retrieve appropriate data loader
+        free()
+        loader = get_data_loader(
+            split=loader_name,
+            batch_size=batch_size,
+            num_batches=num_batches,
+            max_length=max_length,
+            lang_code=lang_code,
+            shuffle=True,
+            num_workers=num_workers,
+            use_tgts=True, # ignored
+            get_tokenized=get_tokenized
+        )
+        free()
+        print('Data loaded.\n')
+        
         epoch_start = time()
         print(f'Epoch {epoch+1} starting...')
         free()
@@ -145,7 +146,7 @@ def train(
                     text=es_texts,
                     text_target=other_texts,
                     return_tensors='pt',
-                    padding='max_length',
+                    padding='longest',
                     truncation=True,
                     max_length=max_length
                 )
@@ -242,7 +243,7 @@ def train(
 def main():
     
     """ HYPERPARAMETERS """ # TODO: search for optimal hyperparameters
-    overfit           = False                             # overfit on small data to test functionality
+    overfit           = True                             # overfit on small data to test functionality
     log_freq          = 100     if not overfit else 1     # frequency of logging in batches
     num_workers       = 2                                 # number of workers for data loader
     get_tokenized     = True                              # whether to get tokenized data
@@ -254,10 +255,10 @@ def main():
     lr                = 1e-5                              # learning rate
     weight_decay      = 1e-2                              # weight decay
     
-    bad_epochs        = 1       if not overfit else 0     # num epochs through bad_supp
+    bad_epochs        = 1       if not overfit else 1     # num epochs through bad_supp
     do_bad            = True    if not overfit else True  # whether to train on bad_supp
     
-    good_epochs       = 3       if not overfit else 0     # num epochs through good_supp
+    good_epochs       = 3       if not overfit else 1     # num epochs through good_supp
     do_good           = True    if not overfit else True  # whether to train on good_supp
     
     train_epochs      = 10      if not overfit else 10    # every training example is guaranteed included:
@@ -266,9 +267,9 @@ def main():
     do_dev            = True    if not overfit else True  # whether to evaluate on dev (ignored for supp data)
     ckpt              = True    if not overfit else False # whether to save checkpoints
     
-    bad_num_batches   = int(100_000 / batch_size) if not overfit else 1  # random sampling is used
-    good_num_batches  = int(100_000 / batch_size) if not overfit else 1  # random sampling is used
-    train_num_batches = int(300_000 / batch_size) if not overfit else 20
+    bad_num_batches   = int(10_000 / batch_size) if not overfit else 1  # random sampling is used
+    good_num_batches  = int(10_000 / batch_size) if not overfit else 1  # random sampling is used
+    train_num_batches = int(30_000 / batch_size) if not overfit else 20
     # random sampling for train_num_batches IF train_num_batches * batch_size > 210368
     
     start = time()
@@ -292,6 +293,9 @@ def main():
         config=config,
         ignore_mismatched_sizes=True
     )
+    for name, param in model.named_parameters():
+        if 'lm_head' not in name:
+            param.requires_grad = False
     print('Model loaded.')
     model.to(device)
     print(f'Model size on GPU: {memory_allocated(device=device) / 1024**3:.2f} GB.\n')

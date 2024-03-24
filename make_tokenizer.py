@@ -42,7 +42,7 @@ def make_tokenizer(tgt_lang: str, src_lang: str, max_length: int) -> PreTrainedT
         tgt_lang=tgt_lang,
         use_fast=True,
         return_tensors='pt',
-        padding='max_length',
+        padding='longest',
         max_length=max_length,
         truncation=True
     )
