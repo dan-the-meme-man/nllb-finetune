@@ -301,16 +301,18 @@ def main():
         ignore_mismatched_sizes=True
     )
     # freeze embeddings and decoder
+    model_encoder_layers = 12
+    model_decoder_layers = 12
     for name, param in model.named_parameters():
         if 'encoder' in name and 'layers' in name:
             layer_num = int(name.split('.')[3])
-            if layer_num < len(model.encoder.layers) - 4:
+            if layer_num < model_encoder_layers - 4:
                 param.requires_grad = False
             else:
                 param.requires_grad = True
         elif 'decoder' in name and 'layers' in name:
             layer_num = int(name.split('.')[3])
-            if layer_num < len(model.decoder.layers) - 4:
+            if layer_num < model_decoder_layers - 4:
                 param.requires_grad = False
             else:
                 param.requires_grad = True
