@@ -6,9 +6,12 @@ from psutil import Process
 
 from torch.multiprocessing import freeze_support
 from torch.cuda import is_available, empty_cache, memory_allocated
-from torch import manual_seed, optim, no_grad, save
+from torch.optim.lr_scheduler import LambdaLR
+from torch.nn.utils import clip_grad_norm_
+from torch import manual_seed, no_grad, save
 
 from transformers import AutoConfig, AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AdamW, get_linear_schedule_with_warmup
 
 from matplotlib.pyplot import plot, figure, savefig, grid, legend, title
 
@@ -78,7 +81,8 @@ def train(
     num_workers: int,
     epochs: int,
     model: AutoModelForSeq2SeqLM,
-    optimizer: optim.Optimizer,
+    optimizer: AdamW,
+    scheduler: LambdaLR,
     device: str,
     dev_num_batches: int,
     ckpt: bool,
@@ -156,7 +160,9 @@ def train(
             outputs = model(**tokenized_batch.to(device))
             loss = outputs.loss
             loss.backward()
+            clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
+            scheduler.step()
             item = loss.item() # log and store loss
             if i % log_freq == log_freq - 1:
                 print(f'Batch {i+1}/{len(loader)} complete, loss: {item}')
@@ -252,8 +258,9 @@ def main():
     max_length        = 384     if not overfit else 16    # maximum length of input sequences
     lang_code         = None    if not overfit else None  # None for all languages
     
-    lr                = 1e-5                              # learning rate
+    lr                = 2e-5                              # learning rate
     weight_decay      = 1e-2                              # weight decay
+    warmup            = 0.1                               # warmup proportion
     
     bad_epochs        = 1       if not overfit else 1     # num epochs through bad_supp
     do_bad            = True    if not overfit else True  # whether to train on bad_supp
@@ -293,8 +300,21 @@ def main():
         config=config,
         ignore_mismatched_sizes=True
     )
+    # freeze embeddings and decoder
     for name, param in model.named_parameters():
-        if 'lm_head' not in name:
+        if 'encoder' in name and 'layers' in name:
+            layer_num = int(name.split('.')[3])
+            if layer_num < len(model.encoder.layers) - 4:
+                param.requires_grad = False
+            else:
+                param.requires_grad = True
+        elif 'decoder' in name and 'layers' in name:
+            layer_num = int(name.split('.')[3])
+            if layer_num < len(model.decoder.layers) - 4:
+                param.requires_grad = False
+            else:
+                param.requires_grad = True
+        elif 'layer_norm' in name:
             param.requires_grad = False
     print('Model loaded.')
     model.to(device)
@@ -306,12 +326,18 @@ def main():
     if not path.exists('outputs'):
         mkdir('outputs')
     
-    optimizer = optim.AdamW( # AdamW optimizer
+    optimizer = AdamW( # AdamW optimizer
         model.parameters(),
         lr=lr,
         eps=1e-8,
         betas=(0.9, 0.999),
         weight_decay=weight_decay
+    )
+    total_batches = bad_num_batches + good_num_batches + train_num_batches
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer, 
+        num_warmup_steps=int(total_batches * warmup),
+        num_training_steps=total_batches
     )
     
     """ TRAINING - BAD SUPP """
