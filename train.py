@@ -262,7 +262,7 @@ def main():
     weight_decay      = 1e-2                              # weight decay
     warmup            = 0.1                               # warmup proportion
     
-    bad_epochs        = 1       if not overfit else 1     # num epochs through bad_supp
+    bad_epochs        = 0       if not overfit else 1     # num epochs through bad_supp
     do_bad            = True    if not overfit else False  # whether to train on bad_supp
     
     good_epochs       = 3       if not overfit else 1     # num epochs through good_supp
