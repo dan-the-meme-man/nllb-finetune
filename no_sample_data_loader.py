@@ -66,12 +66,6 @@ class TrainDataset(Dataset):
         # about which tokenizer to use
         self.examples = []
         
-        # lists to be sampled from later to build self.examples
-        temp = dict.fromkeys(c2t.values())
-        temp.pop('spa_Latn', None)
-        for lang_token in temp:
-            temp[lang_token] = []
-        
         # process each file (language) and add list of examples to temp
         for file in files:
 
@@ -103,64 +97,13 @@ class TrainDataset(Dataset):
                     
                     assert len(es_batch) == len(other_batch)
                     
-                    # tokenize a batch and append to temp dict
-                    # tokenized = tokenizers[lang_token](
-                    #     text = es_batch,
-                    #     text_target = other_batch,
-                    #     return_tensors = 'pt',
-                    #     padding = 'longest',
-                    #     truncation = True,
-                    #     max_length = max_length
-                    # )
-                    # temp[lang_token].append(tokenized)
-                    temp[lang_token].append((es_batch, other_batch, lang_token))
+                    self.examples.append((es_batch, other_batch, lang_token))
                     
                     # clear batch accumulation
                     es_batch = []
                     other_batch = []
                     
-                    # no way we could need this much data
-                    if i >= num_batches * batch_size:
-                        break
-                    
-            print(f'Loaded {len(temp[lang_token]) * batch_size}/{len(lines)} lines of {lang_token}.')
-
-        # build pmf using exponential reweighting
-        probs = dict.fromkeys(c2t.values())
-        probs.pop('spa_Latn', None)
-        for lang_token in probs:
-            probs[lang_token] = 0
-            try:
-                probs[lang_token] = len(temp[lang_token])**(-0.4)
-            except ZeroDivisionError:
-                pass
-        total = sum(probs.values())
-        probs = {lang_token: probs[lang_token] / total for lang_token in probs}
-        
-        # ensure every example is used at least once if num_batches is large enough 
-        # if num_batches * batch_size >= 210368:
-        #     for lang_token in temp:
-        #         for example in temp[lang_token]:
-        #             self.examples.append(example)
-        #             if len(self.examples) % 10000 == 0:
-        #                 print(f'Loaded {len(self.examples)}/{num_batches} batches of {split}.')
-        
-        # sample from pmf until num_batches examples are in self.examples
-        lang_token_list = list(c2t.values())
-        lang_token_list.remove('spa_Latn')
-        weights = [probs[lang_token] for lang_token in lang_token_list]
-        for i in range(num_batches):
-            
-            # randomly select a language based on pmf
-            lang_token = choices(lang_token_list, weights=weights)[0]
-            
-            # randomly select an example of that language
-            self.examples.append(choice(temp[lang_token]))
-            
-            if len(self.examples) % 1000 == 0:
-                print(f'Loaded {i}/{num_batches} batches of {split}.')
-        
-        del temp
+            print(f'Loaded {len(self.examples)}/~200K lines of {lang_token}.')
 
     def __getitem__(self, idx) -> Union[tuple[list[str], list[str], str], BatchEncoding]:
         
@@ -245,12 +188,6 @@ class SuppDataset(Dataset):
         # about which tokenizer to use
         self.examples = []
         
-        # lists to be sampled from later to build self.examples
-        temp = dict.fromkeys(c2t.values())
-        temp.pop('spa_Latn', None)
-        for lang_token in temp:
-            temp[lang_token] = []
-        
         # process each file (language) and add list of examples to temp
         for file in files:
 
@@ -281,57 +218,15 @@ class SuppDataset(Dataset):
                 if len(es_batch) == batch_size or i == len(lines) - 1:
                     
                     assert len(es_batch) == len(other_batch)
-                    
-                    # tokenize a batch and append to temp dict
-                    # tokenized = tokenizers[lang_token](
-                    #     text = es_batch,
-                    #     text_target = other_batch,
-                    #     return_tensors = 'pt',
-                    #     padding = 'longest',
-                    #     truncation = True,
-                    #     max_length = max_length
-                    # )
-                    # temp[lang_token].append(tokenized)
-                    temp[lang_token].append((es_batch, other_batch, lang_token))
+
+                    self.examples.append((es_batch, other_batch, lang_token))
                     
                     # clear batch accumulation
                     es_batch = []
                     other_batch = []
-                    
-                    # no way we could need this much data
-                    if i >= num_batches * batch_size:
-                        break
-
-            print(f'Loaded {len(temp[lang_token]) * batch_size}/{len(lines)} lines of {lang_token}.')
-
-        # build pmf using exponential reweighting
-        probs = dict.fromkeys(c2t.values())
-        probs.pop('spa_Latn', None)
-        for lang_token in probs:
-            probs[lang_token] = 0
-            try:
-                probs[lang_token] = len(temp[lang_token])**(-0.4)
-            except ZeroDivisionError:
-                pass
-        total = sum(probs.values())
-        probs = {lang_token: probs[lang_token] / total for lang_token in probs}
-        
-        # sample from pmf until num_batches examples are in self.examples
-        lang_token_list = list(c2t.values())
-        lang_token_list.remove('spa_Latn')
-        weights = [probs[lang_token] for lang_token in lang_token_list]
-        for i in range(num_batches):
             
-            # randomly select a language based on pmf
-            lang_token = choices(lang_token_list, weights=weights)[0]
-            
-            # randomly select a batch of examples of that language
-            self.examples.append(choice(temp[lang_token]))
-            
-            if i % 1000 == 999:
-                print(f'Loaded {i+1}/{num_batches} batches of {split}.')
-        
-        del temp
+                if i % 1000 == 999:
+                    print(f'Loaded {len(self.examples)}/~200k batches of {split}.')
 
     def __getitem__(self, idx: int) -> Union[tuple[list[str], list[str], str], BatchEncoding]:
         
@@ -536,6 +431,9 @@ def get_data_loader(
         Returns:
         - Union[DataLoader, list[DataLoader]]: DataLoader (or list of) for specified split and language code.
     """
+    
+    if split == 'bad':
+        raise ValueError('bad_supp is not supported due to size.')
     
     if split != 'dev':
         split_loc = path.join('proj_data_final', split)

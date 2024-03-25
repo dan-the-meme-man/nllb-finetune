@@ -15,9 +15,16 @@ from transformers import AdamW, get_linear_schedule_with_warmup
 
 from matplotlib.pyplot import plot, figure, savefig, grid, legend, title
 
-from get_data_loader import get_data_loader
+#from get_data_loader import get_data_loader
+from no_sample_data_loader import get_data_loader
 
 from make_tokenizer import make_tokenizer, c2t
+
+# potential issues:
+# hf surgery - model seems to have right size when loading up checkpoints
+# data loader - maybe sampling is wrong, some things occur multiple times in small set
+# bad supp might just be garbage and should be ignored
+# maybe no random sampling is good, or at least ensuring all good supp and train are included
 
 def free():
     
@@ -146,6 +153,8 @@ def train(
         for i, batch in enumerate(loader): # batch loop
             if not get_tokenized:
                 es_texts, other_texts, lang_token = batch # unpack batch and lang token and tokenize
+                assert tokenizers[lang_token].tgt_lang == lang_token
+                assert tokenizers[lang_token]._src_lang == 'spa_Latn'
                 tokenized_batch = tokenizers[lang_token](
                     text=es_texts,
                     text_target=other_texts,
@@ -160,7 +169,7 @@ def train(
             outputs = model(**tokenized_batch.to(device))
             loss = outputs.loss
             loss.backward()
-            clip_grad_norm_(model.parameters(), max_norm=1.0)
+            #clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             scheduler.step()
             item = loss.item() # log and store loss
@@ -259,7 +268,7 @@ def main():
     lang_code         = None    if not overfit else None  # None for all languages
     
     lr                = 1e-5                              # learning rate
-    weight_decay      = 1e-2                              # weight decay
+    weight_decay      = 1e-4                              # weight decay
     warmup            = 0.1                               # warmup proportion
     
     bad_epochs        = 0       if not overfit else 1     # num epochs through bad_supp
