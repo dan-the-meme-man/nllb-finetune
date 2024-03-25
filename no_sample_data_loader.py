@@ -102,8 +102,9 @@ class TrainDataset(Dataset):
                     # clear batch accumulation
                     es_batch = []
                     other_batch = []
-                    
-            print(f'Loaded {len(self.examples)}/~200K lines of {lang_token}.')
+                
+                if len(self.examples) % 1000 == 0:
+                    print(f'Loaded {len(self.examples)}/~200K lines of {lang_token}.')
 
     def __getitem__(self, idx) -> Union[tuple[list[str], list[str], str], BatchEncoding]:
         
@@ -151,14 +152,10 @@ class SuppDataset(Dataset):
         This dataset encapsulates supplementary training data.
         
         Parameters:
-        - split: str
-            The name of the split ('good_supp' or 'bad_supp').
-        - files: list[str]
-            A list of file paths to the supplementary data.
-        - batch_size: int
-            The number of examples in each batch.
-        - num_batches: int
-            The number of batches to load.
+        - split (str): The name of the split ('good_supp' or 'bad_supp').
+        - files (list[str]): A list of file paths to the supplementary data.
+        - batch_size (int): The number of examples in each batch.
+        - num_batches (int): The number of batches to load.
         
     """
     
@@ -225,7 +222,7 @@ class SuppDataset(Dataset):
                     es_batch = []
                     other_batch = []
             
-                if i % 1000 == 999:
+                if len(self.examples) % 1000 == 0:
                     print(f'Loaded {len(self.examples)}/~200k batches of {split}.')
 
     def __getitem__(self, idx: int) -> Union[tuple[list[str], list[str], str], BatchEncoding]:
