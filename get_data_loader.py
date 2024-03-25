@@ -180,6 +180,9 @@ class TrainDataset(Dataset):
         
         es_texts, other_texts, lang_token = self.examples[idx]
         
+        assert self.tokenizers[lang_token]._src_lang == 'spa_Latn'
+        assert self.tokenizers[lang_token].tgt_lang == lang_token
+        
         tokenized_batch = self.tokenizers[lang_token](
             text=es_texts,
             text_target=other_texts,
@@ -351,6 +354,9 @@ class SuppDataset(Dataset):
         
         es_texts, other_texts, lang_token = self.examples[idx]
         
+        assert self.tokenizers[lang_token]._src_lang == 'spa_Latn'
+        assert self.tokenizers[lang_token].tgt_lang == lang_token
+        
         tokenized_batch = self.tokenizers[lang_token](
             text=es_texts,
             text_target=other_texts,
@@ -442,6 +448,8 @@ class DevSet(Dataset):
                 # tokenize a batch and append to temp dict
                 if use_tgts:
                     if get_tokenized:
+                        assert self.tokenizer._src_lang == 'spa_Latn'
+                        assert self.tokenizer.tgt_lang == self.lang_token
                         tokenized = self.tokenizer(
                             text = es_batch,
                             text_target = other_batch,
@@ -456,6 +464,8 @@ class DevSet(Dataset):
                         tokenized = (es_batch, other_batch)
                 else:
                     if get_tokenized:
+                        assert self.tokenizer._src_lang == 'spa_Latn'
+                        assert self.tokenizer.tgt_lang == self.lang_token
                         tokenized = self.tokenizer(
                             text = es_batch,
                             return_tensors = 'pt',
