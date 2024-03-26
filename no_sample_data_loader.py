@@ -105,6 +105,9 @@ class TrainDataset(Dataset):
                 
                 if len(self.examples) % 1000 == 0:
                     print(f'Loaded {len(self.examples)}/~200K lines of {lang_token}.')
+                
+                if num_batches is not None and len(self.examples) >= num_batches:
+                    break
 
     def __getitem__(self, idx) -> Union[tuple[list[str], list[str], str], BatchEncoding]:
         
@@ -227,6 +230,9 @@ class SuppDataset(Dataset):
             
                 if len(self.examples) % 1000 == 0:
                     print(f'Loaded {len(self.examples)}/~200k batches of {split}.')
+                    
+                if num_batches is not None and len(self.examples) >= num_batches:
+                    break
 
     def __getitem__(self, idx: int) -> Union[tuple[list[str], list[str], str], BatchEncoding]:
         
