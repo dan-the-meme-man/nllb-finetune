@@ -18,7 +18,7 @@ from matplotlib.pyplot import plot, figure, savefig, grid, legend, title
 #from get_data_loader import get_data_loader
 from no_sample_data_loader import get_data_loader
 
-from make_tokenizer import make_tokenizer, c2t
+from make_tokenizer import make_tokenizer, c2t, t2i
 
 # potential issues:
 # hf surgery - model seems to have right size when loading up checkpoints
@@ -78,6 +78,52 @@ def plot_losses(
         mkdir(plots_dir)
     savefig(path.join(plots_dir, f'{plot_title}_{output_str}.png'))
 
+def decode(
+    ckpt_str: str,
+    model: AutoModelForSeq2SeqLM,
+    dev_loaders: list,
+    device: str,
+    max_length: int
+):
+    tr_dir = path.join('outputs', 'translations')
+    if not path.exists(tr_dir):
+        mkdir(tr_dir)
+        
+    model_tr_dir = path.join(tr_dir, ckpt_str[:-4])
+    if not path.exists(model_tr_dir):
+        mkdir(model_tr_dir)
+    
+    with no_grad():
+        model.eval()
+        for dev_loader in dev_loaders:
+            
+            lang_code = dev_loader.dataset.lang_code
+            lang_token = dev_loader.dataset.lang_token
+            tokenizer = dev_loader.dataset.tokenizer
+            
+            translations = []
+            
+            for i, batch in enumerate(dev_loader):
+                
+                outputs = model.generate(
+                    **batch.to(device),
+                    forced_bos_token_id=t2i[lang_token],
+                    max_length=max_length,
+                    num_beams=4,
+                    no_repeat_ngram_size=2,
+                    early_stopping=True
+                )
+                translations.extend(tokenizer.batch_decode(outputs, skip_special_tokens=True))
+                
+                if i % 100 == 0:
+                    print(f'{i} batches decoded for {lang_code}.')
+                
+            loc = path.join(model_tr_dir, lang_code + '.txt')
+                
+            with open(loc, 'w+', encoding='utf-8') as f:
+                for t in translations:
+                    f.write(t + '\n')
+
 def train(
     loader_name: str,
     tokenizers: dict[str, AutoTokenizer],
@@ -96,7 +142,8 @@ def train(
     output_str: str,
     do_dev: bool,
     log_freq: int,
-    get_tokenized: bool
+    get_tokenized: bool,
+    overfit: bool
 ) -> tuple[list, list]:
     
     """
@@ -130,9 +177,11 @@ def train(
     
     for epoch in range(epochs): # epoch loop
         
+        ckpt_str = f'checkpoint{epoch+1}_{loader_name}_{output_str}.pth'
+        
         print('Loading data...') # retrieve appropriate data loader
         free()
-        loader = get_data_loader(
+        train_loader = get_data_loader(
             split=loader_name,
             batch_size=batch_size,
             num_batches=num_batches,
@@ -150,7 +199,7 @@ def train(
         print(f'Epoch {epoch+1} starting...')
         free()
         model.train() # ensure training mode
-        for i, batch in enumerate(loader): # batch loop
+        for i, batch in enumerate(train_loader): # batch loop
             if not get_tokenized:
                 es_texts, other_texts, lang_token = batch # unpack batch and lang token and tokenize
                 assert tokenizers[lang_token].tgt_lang == lang_token
@@ -174,7 +223,7 @@ def train(
             scheduler.step()
             item = loss.item() # log and store loss
             if i % log_freq == log_freq - 1:
-                print(f'Batch {i+1}/{len(loader)} complete, loss: {item}')
+                print(f'Batch {i+1}/{len(train_loader)} complete, loss: {item}')
             train_losses.append(item)
             del item # free memory
             del batch
@@ -189,17 +238,20 @@ def train(
         if do_dev: # evaluate on dev
             print('Loading dev data...') # retrieve dev data loader
             free()
-            dev_loaders = get_data_loader(
-                split='dev',
-                batch_size=batch_size,
-                num_batches=dev_num_batches,
-                max_length=max_length,
-                lang_code=lang_code,
-                shuffle=False, # ignored
-                num_workers=num_workers,
-                use_tgts=True, # for dev loss
-                get_tokenized=get_tokenized # ignored
-            )
+            if not overfit:
+                dev_loaders = get_data_loader(
+                    split='dev',
+                    batch_size=batch_size,
+                    num_batches=dev_num_batches,
+                    max_length=max_length,
+                    lang_code=lang_code,
+                    shuffle=False, # ignored
+                    num_workers=num_workers,
+                    use_tgts=True, # for dev loss
+                    get_tokenized=get_tokenized # ignored
+                )
+            else:
+                dev_loaders = [train_loader]
             free()
             print('Dev data loaded.\n')
 
@@ -208,7 +260,7 @@ def train(
             model.eval() # ensure evaluation mode
             with no_grad(): # no gradients for evaluation
                 # evaluate on each dev data loader - one for each language
-                for dev_loader in dev_loaders: # dev loop
+                for dev_loader in dev_loaders: # dev loop TODO: add inference
                     lang_token = dev_loader.dataset.lang_token # fetch lang token
                     for i, batch in enumerate(dev_loader): # dev batch loop
                         outputs = model(**batch.to(device)) # pretokenized batches
@@ -224,8 +276,18 @@ def train(
                         del outputs
                         del loss
                         collect()
-                        empty_cache()
-            del dev_loaders # free memory and log 
+                        empty_cache() 
+            free()
+            print(f'Finished computing losses. Running inference.\n')
+            decode(
+                ckpt_str,
+                model,
+                dev_loaders,
+                device,
+                max_length
+            )
+            if not overfit:
+                del dev_loaders # free memory and log
             free()
             print(f'Epoch {epoch+1} eval complete.\n')
 
@@ -243,7 +305,7 @@ def train(
                 checkpoint,
                 path.join(
                     ckpts_dir,
-                    f'checkpoint{epoch+1}_{loader_name}_{output_str}.pth'
+                    ckpt_str
                 )
             )
             del checkpoint
@@ -263,9 +325,9 @@ def main():
     num_workers       = 2                                 # number of workers for data loader
     get_tokenized     = True                              # whether to get tokenized data
     
-    batch_size        = 4       if not overfit else 2     # batch size
+    batch_size        = 4       if not overfit else 1     # batch size
     max_length        = 384     if not overfit else 16    # maximum length of input sequences
-    lang_code         = None    if not overfit else None  # None for all languages
+    lang_code         = None    if not overfit else 'aym' # None for all languages
     
     lr                = 1e-5                              # learning rate
     weight_decay      = 1e-4                              # weight decay
@@ -310,26 +372,14 @@ def main():
         ignore_mismatched_sizes=True
     )
     # freeze embeddings and decoder
-    model_encoder_layers = 12
-    model_decoder_layers = 12
     for name, param in model.named_parameters():
-        if 'encoder' in name and 'layers' in name:
-            layer_num = int(name.split('.')[3])
-            if layer_num < model_encoder_layers - 4:
-                param.requires_grad = False
-            else:
-                param.requires_grad = True
-        elif 'decoder' in name and 'layers' in name:
-            layer_num = int(name.split('.')[3])
-            if layer_num < model_decoder_layers - 4:
-                param.requires_grad = False
-            else:
-                param.requires_grad = True
-        elif 'layer_norm' in name:
-            param.requires_grad = False
+        param.requires_grad = False
+        if 'decoder.layers.11' in name: # TODO: check
+            param.requires_grad = True
     print('Model loaded.')
     model.to(device)
-    print(f'Model size on GPU: {memory_allocated(device=device) / 1024**3:.2f} GB.\n')
+    print(f'Using device: {device}.')
+    print(f'Model size on {device}: {memory_allocated(device=device) / 1024**3:.2f} GB.\n')
     
     # output string for saving plots and checkpoints
     output_str = f'{batch_size}_{bad_epochs}_{bad_num_batches}_{good_epochs}'
@@ -372,7 +422,8 @@ def main():
             output_str=output_str,
             do_dev=False,
             log_freq=log_freq,
-            get_tokenized=get_tokenized
+            get_tokenized=get_tokenized,
+            overfit=overfit
         )
         print('Training on bad supp complete.\n')
     else: # let plotting proceed regardless
@@ -400,7 +451,8 @@ def main():
             output_str=output_str,
             do_dev=False,
             log_freq=log_freq,
-            get_tokenized=get_tokenized
+            get_tokenized=get_tokenized,
+            overfit=overfit
         )
         print('Training on good supp complete.\n')
     else: # let plotting proceed regardless
@@ -427,7 +479,8 @@ def main():
         output_str=output_str,
         do_dev=do_dev,
         log_freq=log_freq,
-        get_tokenized=get_tokenized
+        get_tokenized=get_tokenized,
+        overfit=overfit
     )
     print('Training on train complete.\n')
     
