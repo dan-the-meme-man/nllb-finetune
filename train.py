@@ -330,7 +330,7 @@ def main():
     log_freq          = 100     if not overfit else 1      # frequency of logging in batches
     num_workers       = 2                                  # number of workers for data loader
     get_tokenized     = True                               # whether to get tokenized data
-    freeze            = True # TODO: decide                # freeze most of the model
+    freeze            = False # TODO: decide                # freeze most of the model
     
     batch_size        = 4       if not overfit else 1      # batch size
     max_length        = 384     if not overfit else 16     # maximum length of input sequences
