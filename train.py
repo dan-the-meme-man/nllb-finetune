@@ -172,28 +172,36 @@ def train(
         - tuple[list, list]: Train losses and dev losses.
     """
     
+    print('Loading data...') # retrieve appropriate data loader
+    free()
+    print(loader_name, batch_size, num_batches, max_length, lang_code, num_workers, get_tokenized)
+    train_loader = get_data_loader(
+        split=loader_name,
+        batch_size=batch_size,
+        num_batches=num_batches,
+        max_length=max_length,
+        lang_code=lang_code,
+        shuffle=True,
+        num_workers=num_workers,
+        use_tgts=True, # ignored
+        get_tokenized=False #TODO: change back to get_tokenized
+    )
+    free()
+    print('Data loaded.\n')
+    
+    # print('loader:', train_loader, len(train_loader), '\n')
+    # for j, batch in enumerate(train_loader):
+    #     if j % 5000 == 0:
+    #         print(j, batch[0][0][:10], batch[1][0][:10], batch[2])
+    #         print()
+    # exit()
+    
     train_losses = [] # set up for plotting
     dev_losses = []
     
     for epoch in range(epochs): # epoch loop
         
         ckpt_str = f'checkpoint{epoch+1}_{loader_name}_{output_str}.pth'
-        
-        print('Loading data...') # retrieve appropriate data loader
-        free()
-        train_loader = get_data_loader(
-            split=loader_name,
-            batch_size=batch_size,
-            num_batches=num_batches,
-            max_length=max_length,
-            lang_code=lang_code,
-            shuffle=True,
-            num_workers=num_workers,
-            use_tgts=True, # ignored
-            get_tokenized=get_tokenized
-        )
-        free()
-        print('Data loaded.\n')
         
         epoch_start = time()
         print(f'Epoch {epoch+1} starting...')
@@ -309,8 +317,8 @@ def train(
             free()
             print('Done.\n')
             
-        del train_loader # free memory
-        free()
+    del train_loader # free memory
+    free()
         
     return train_losses, dev_losses # return losses for plotting
 
@@ -332,7 +340,7 @@ def main():
     warmup            = 0.1                               # warmup proportion
     
     bad_epochs        = 0       if not overfit else 0     # num epochs through bad_supp
-    do_bad            = True    if not overfit else False  # whether to train on bad_supp
+    do_bad            = False    if not overfit else False  # whether to train on bad_supp
     
     good_epochs       = 3       if not overfit else 1     # num epochs through good_supp
     do_good           = True    if not overfit else False  # whether to train on good_supp
@@ -344,8 +352,8 @@ def main():
     ckpt              = True    if not overfit else False # whether to save checkpoints
     
     bad_num_batches   = int(10_000 / batch_size) if not overfit else 1  # random sampling is used
-    good_num_batches  = int(10_000 / batch_size) if not overfit else 1  # random sampling is used
-    train_num_batches = int(10_000 / batch_size) if not overfit else 20
+    good_num_batches  = None if not overfit else 1  # random sampling is used
+    train_num_batches = None if not overfit else 20
     # random sampling for train_num_batches IF train_num_batches * batch_size > 210368
     
     start = time()
