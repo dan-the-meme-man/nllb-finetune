@@ -103,8 +103,8 @@ class TrainDataset(Dataset):
                     es_batch = []
                     other_batch = []
                 
-                if len(self.examples) % 1000 == 0:
-                    print(f'Loaded {len(self.examples)}/~200K lines of {lang_token}.')
+                if i % 1000 == 999:
+                    print(f'Loaded {i+1}/{len(lines)} lines of {lang_token}.')
                 
                 if num_batches is not None and len(self.examples) >= num_batches:
                     break
@@ -228,8 +228,8 @@ class SuppDataset(Dataset):
                     es_batch = []
                     other_batch = []
             
-                if len(self.examples) % 1000 == 0:
-                    print(f'Loaded {len(self.examples)}/~200k batches of {split}.')
+                if i % 1000 == 999:
+                    print(f'Loaded {i+1}/{len(lines)} lines of {lang_token}.')
                     
                 if num_batches is not None and len(self.examples) >= num_batches:
                     break
