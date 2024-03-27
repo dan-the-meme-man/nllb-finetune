@@ -373,10 +373,11 @@ def main():
     )
     model.resize_token_embeddings(len(tokenizers['ayr_Latn'])) # resize embeddings
     # freeze embeddings and decoder
-    for name, param in model.named_parameters():
-        param.requires_grad = False
-        if 'decoder.layers.11' in name: # TODO: check
-            param.requires_grad = True
+    if freeze:
+        for name, param in model.named_parameters():
+            param.requires_grad = False
+            if 'decoder.layers.11' in name: # TODO: check
+                param.requires_grad = True
     print('Model loaded.')
     model.to(device)
     print(f'Using device: {device}.')
