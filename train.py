@@ -324,7 +324,7 @@ def main():
     log_freq          = 100     if not overfit else 1     # frequency of logging in batches
     num_workers       = 2                                 # number of workers for data loader
     get_tokenized     = True                              # whether to get tokenized data
-    freeze            = False
+    freeze            = True
     
     batch_size        = 4       if not overfit else 1     # batch size
     max_length        = 384     if not overfit else 16    # maximum length of input sequences
@@ -374,6 +374,7 @@ def main():
     model.resize_token_embeddings(len(tokenizers['ayr_Latn'])) # resize embeddings
     # freeze embeddings and decoder
     if freeze:
+        print('Freezing almost everything...')
         for name, param in model.named_parameters():
             param.requires_grad = False
             if 'decoder.layers.11' in name: # TODO: check
