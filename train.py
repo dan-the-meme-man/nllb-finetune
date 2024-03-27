@@ -220,7 +220,7 @@ def train(
             loss.backward()
             #clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
-            scheduler.step()
+            #scheduler.step()
             item = loss.item() # log and store loss
             if i % log_freq == log_freq - 1:
                 print(f'Batch {i+1}/{len(train_loader)} complete, loss: {item}')
@@ -400,6 +400,7 @@ def main():
     #     num_warmup_steps=int(total_batches * warmup),
     #     num_training_steps=total_batches
     # )
+    scheduler = None
     
     """ TRAINING - BAD SUPP """
     if do_bad:
