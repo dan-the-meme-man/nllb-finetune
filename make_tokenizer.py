@@ -63,5 +63,7 @@ def make_tokenizer(tgt_lang: str, src_lang: str, max_length: int) -> PreTrainedT
     for lang_token in t2c:
         assert lang_token in tokenizer.additional_special_tokens
         t2i[lang_token] = tokenizer.convert_tokens_to_ids(lang_token)
-        
+    
+    assert len(tokenizer) == 256212
+    
     return tokenizer

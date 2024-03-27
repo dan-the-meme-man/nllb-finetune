@@ -10,7 +10,7 @@ from torch.optim.lr_scheduler import LambdaLR
 from torch.nn.utils import clip_grad_norm_
 from torch import manual_seed, no_grad, save
 
-from transformers import AutoConfig, AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from transformers import AdamW, get_linear_schedule_with_warmup
 
 from matplotlib.pyplot import plot, figure, savefig, grid, legend, title
@@ -324,6 +324,7 @@ def main():
     log_freq          = 100     if not overfit else 1     # frequency of logging in batches
     num_workers       = 2                                 # number of workers for data loader
     get_tokenized     = True                              # whether to get tokenized data
+    freeze            = False
     
     batch_size        = 4       if not overfit else 1     # batch size
     max_length        = 384     if not overfit else 16    # maximum length of input sequences
@@ -333,7 +334,7 @@ def main():
     weight_decay      = 1e-4                              # weight decay
     warmup            = 0.1                               # warmup proportion
     
-    bad_epochs        = 0       if not overfit else 1     # num epochs through bad_supp
+    bad_epochs        = 0       if not overfit else 0     # num epochs through bad_supp
     do_bad            = True    if not overfit else False  # whether to train on bad_supp
     
     good_epochs       = 3       if not overfit else 1     # num epochs through good_supp
@@ -362,15 +363,15 @@ def main():
     tokenizers = dict.fromkeys(c2t.values())
     for lang_token in tokenizers: # load tokenizers for each language
         tokenizers[lang_token] = make_tokenizer(lang_token, 'spa_Latn', max_length)
+        assert tokenizers[lang_code]._src_lang == 'spa_Latn'
+        assert tokenizers[lang_code].tgt_lang == lang_code
+        assert len(tokenizers[lang_code]) == 256212
     model_name = 'facebook/nllb-200-distilled-600M'
-    config = AutoConfig.from_pretrained(model_name)
-    config.vocab_size += 8 # 8 new special tokens for languages
-    config.max_position_embeddings = max_length # max length built-in to model
     model = AutoModelForSeq2SeqLM.from_pretrained(
         model_name,
-        config=config,
         ignore_mismatched_sizes=True
     )
+    model.resize_token_embeddings(len(tokenizers['ayr_Latn'])) # resize embeddings
     # freeze embeddings and decoder
     for name, param in model.named_parameters():
         param.requires_grad = False

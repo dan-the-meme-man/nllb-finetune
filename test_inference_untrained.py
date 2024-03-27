@@ -5,7 +5,7 @@ from torch.multiprocessing import freeze_support
 from torch.cuda import is_available, empty_cache, memory_allocated
 from torch import no_grad, load, manual_seed
 
-from transformers import AutoConfig, AutoModelForSeq2SeqLM
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from get_data_loader import get_data_loader
 from make_tokenizer import make_tokenizer, c2t, t2i
@@ -20,15 +20,13 @@ def main():
 
     model_name = 'facebook/nllb-200-distilled-600M'
     
-    config = AutoConfig.from_pretrained(model_name)
-    config.vocab_size += 8 # 8 new special tokens for languages
-    
     print('Loading model...')
     model = AutoModelForSeq2SeqLM.from_pretrained(
         model_name,
-        config=config,
         ignore_mismatched_sizes=True
     ).to(device)
+    tokenizer = make_tokenizer('ayr_Latn', 'spa_Latn', 384)
+    model.resize_token_embeddings(len(tokenizer))
     print('Model loaded.\n')
     
     overfit           = True
@@ -48,7 +46,7 @@ def main():
         shuffle=False, # ignored
         num_workers=num_workers,
         use_tgts=False, # needed to do decoding
-        get_tokenized=True
+        get_tokenized=False
     )
     print('Dev data loaded.\n')
     
@@ -66,17 +64,40 @@ def main():
             
             lang_code = dev_loader.dataset.lang_code
             lang_token = dev_loader.dataset.lang_token
-            tokenizer = dev_loader.dataset.tokenizer
+            #tokenizer = dev_loader.dataset.tokenizer
             
             translations = []
             
+            # tokenizer = AutoTokenizer.from_pretrained(
+            #     'facebook/nllb-200-distilled-600M',
+            #     src_lang='spa_Latn',
+            #     tgt_lang='ayr_Latn',
+            #     use_fast=True,
+            #     return_tensors='pt',
+            #     padding='longest',
+            #     max_length=max_length,
+            #     truncation=True
+            # )
+            
             for i, batch in enumerate(dev_loader):
                 
-                # print(batch)
-                # exit()
+                #print(tokenizer._src_lang, tokenizer.tgt_lang, lang_code, lang_token)
+                #tokenizer = make_tokenizer('eng_Latn', 'spa_Latn', max_length)
+                assert tokenizer._src_lang == 'spa_Latn'
+                assert tokenizer.tgt_lang == 'ayr_Latn'
+                
+                print(batch)
+                
+                tokenized_batch = tokenizer(
+                    batch,
+                    return_tensors='pt',
+                    padding='longest',
+                    max_length=max_length,
+                    truncation=True
+                )
                 
                 outputs = model.generate(
-                    **batch.to(device),
+                    **tokenized_batch.to(device),
                     forced_bos_token_id=t2i[lang_token],
                     max_length=max_length,
                     num_beams=4,
