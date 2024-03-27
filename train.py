@@ -312,7 +312,7 @@ def train(
             free()
             print('Done.\n')
             
-        del loader # free memory
+        del train_loader # free memory
         free()
         
     return train_losses, dev_losses # return losses for plotting
