@@ -27,6 +27,9 @@ def main():
     ).to(device)
     tokenizer = make_tokenizer('ayr_Latn', 'spa_Latn', 384)
     model.resize_token_embeddings(len(tokenizer))
+    # for name, param in model.named_parameters():
+    #     print(name)
+    # exit()
     print('Model loaded.\n')
     
     overfit           = True

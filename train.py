@@ -265,7 +265,7 @@ def train(
             model.eval() # ensure evaluation mode
             with no_grad(): # no gradients for evaluation
                 # evaluate on each dev data loader - one for each language
-                for dev_loader in dev_loaders: # dev loop TODO: add inference
+                for dev_loader in dev_loaders: # dev loop
                     lang_token = dev_loader.dataset.lang_token # fetch lang token
                     for i, batch in enumerate(dev_loader): # dev batch loop
                         outputs = model(**batch.to(device)) # pretokenized batches
@@ -382,7 +382,7 @@ def main():
         print('Freezing almost everything...')
         for name, param in model.named_parameters():
             param.requires_grad = False
-            if 'decoder.layers.11' in name: # TODO: check
+            if 'decoder.layers.11' in name:
                 param.requires_grad = True
     print('Model loaded.')
     model.to(device)
