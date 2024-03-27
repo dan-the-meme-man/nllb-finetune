@@ -339,7 +339,7 @@ def main():
     
     train_epochs      = 10      if not overfit else 50    # every training example is guaranteed included:
     
-    dev_num_batches   = None    if not overfit else 0    # None for full dev set
+    dev_num_batches   = None    if not overfit else 20    # None for full dev set
     do_dev            = True    if not overfit else True  # whether to evaluate on dev (ignored for supp data)
     ckpt              = True    if not overfit else False # whether to save checkpoints
     
