@@ -238,20 +238,17 @@ def train(
         if do_dev: # evaluate on dev
             print('Loading dev data...') # retrieve dev data loader
             free()
-            if not overfit:
-                dev_loaders = get_data_loader(
-                    split='dev',
-                    batch_size=batch_size,
-                    num_batches=dev_num_batches,
-                    max_length=max_length,
-                    lang_code=lang_code,
-                    shuffle=False, # ignored
-                    num_workers=num_workers,
-                    use_tgts=True, # for dev loss
-                    get_tokenized=get_tokenized # ignored
-                )
-            else:
-                dev_loaders = [train_loader]
+            dev_loaders = get_data_loader(
+                split='dev',
+                batch_size=batch_size,
+                num_batches=dev_num_batches,
+                max_length=max_length,
+                lang_code=lang_code,
+                shuffle=False, # ignored
+                num_workers=num_workers,
+                use_tgts=True, # for dev loss
+                get_tokenized=get_tokenized # ignored
+            )
             free()
             print('Dev data loaded.\n')
 
