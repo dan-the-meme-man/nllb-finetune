@@ -345,7 +345,7 @@ def main():
     
     bad_num_batches   = int(10_000 / batch_size) if not overfit else 1  # random sampling is used
     good_num_batches  = int(10_000 / batch_size) if not overfit else 1  # random sampling is used
-    train_num_batches = int(30_000 / batch_size) if not overfit else 20
+    train_num_batches = int(10_000 / batch_size) if not overfit else 20
     # random sampling for train_num_batches IF train_num_batches * batch_size > 210368
     
     start = time()
@@ -394,12 +394,12 @@ def main():
         betas=(0.9, 0.999),
         weight_decay=weight_decay
     )
-    total_batches = bad_num_batches + good_num_batches + train_num_batches
-    scheduler = get_linear_schedule_with_warmup(
-        optimizer, 
-        num_warmup_steps=int(total_batches * warmup),
-        num_training_steps=total_batches
-    )
+    # total_batches = bad_num_batches + good_num_batches + train_num_batches
+    # scheduler = get_linear_schedule_with_warmup(
+    #     optimizer,
+    #     num_warmup_steps=int(total_batches * warmup),
+    #     num_training_steps=total_batches
+    # )
     
     """ TRAINING - BAD SUPP """
     if do_bad:
