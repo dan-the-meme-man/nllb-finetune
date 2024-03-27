@@ -184,7 +184,7 @@ def train(
         shuffle=True,
         num_workers=num_workers,
         use_tgts=True, # ignored
-        get_tokenized=False #TODO: change back to get_tokenized
+        get_tokenized=get_tokenized
     )
     free()
     print('Data loaded.\n')
