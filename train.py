@@ -363,9 +363,9 @@ def main():
     tokenizers = dict.fromkeys(c2t.values())
     for lang_token in tokenizers: # load tokenizers for each language
         tokenizers[lang_token] = make_tokenizer(lang_token, 'spa_Latn', max_length)
-        assert tokenizers[lang_code]._src_lang == 'spa_Latn'
-        assert tokenizers[lang_code].tgt_lang == lang_code
-        assert len(tokenizers[lang_code]) == 256212
+        assert tokenizers[lang_token]._src_lang == 'spa_Latn'
+        assert tokenizers[lang_token].tgt_lang == lang_token
+        assert len(tokenizers[lang_token]) == 256212
     model_name = 'facebook/nllb-200-distilled-600M'
     model = AutoModelForSeq2SeqLM.from_pretrained(
         model_name,
