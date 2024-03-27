@@ -15,8 +15,9 @@ from transformers import AdamW, get_linear_schedule_with_warmup
 
 from matplotlib.pyplot import plot, figure, savefig, grid, legend, title
 
-#from get_data_loader import get_data_loader
-from no_sample_data_loader import get_data_loader
+# TODO: switch back to no_sample_data_loader
+from get_data_loader import get_data_loader
+#from no_sample_data_loader import get_data_loader
 
 from make_tokenizer import make_tokenizer, c2t, t2i
 
@@ -325,35 +326,36 @@ def train(
 def main():
     
     """ HYPERPARAMETERS """ # TODO: search for optimal hyperparameters
-    overfit           = False                             # overfit on small data to test functionality
-    log_freq          = 100     if not overfit else 1     # frequency of logging in batches
-    num_workers       = 2                                 # number of workers for data loader
-    get_tokenized     = True                              # whether to get tokenized data
-    freeze            = True                              # freeze most of the model
+    overfit           = False                              # overfit on small data to test functionality
+    log_freq          = 100     if not overfit else 1      # frequency of logging in batches
+    num_workers       = 2                                  # number of workers for data loader
+    get_tokenized     = True                               # whether to get tokenized data
+    freeze            = True # TODO: decide                # freeze most of the model
     
-    batch_size        = 4       if not overfit else 1     # batch size
-    max_length        = 384     if not overfit else 16    # maximum length of input sequences
-    lang_code         = None    if not overfit else 'aym' # None for all languages
+    batch_size        = 4       if not overfit else 1      # batch size
+    max_length        = 384     if not overfit else 16     # maximum length of input sequences
+    lang_code         = None    if not overfit else 'aym'  # None for all languages
     
-    lr                = 1e-5                              # learning rate
-    weight_decay      = 1e-4                              # weight decay
-    warmup            = 0.1                               # warmup proportion
+    lr                = 1e-5                               # learning rate
+    weight_decay      = 1e-4                               # weight decay
+    warmup            = 0.1                                # warmup proportion
     
-    bad_epochs        = 0       if not overfit else 0     # num epochs through bad_supp
-    do_bad            = False    if not overfit else False  # whether to train on bad_supp
+    bad_epochs        = 0       if not overfit else 0      # num epochs through bad_supp
+    do_bad            = False    if not overfit else False # whether to train on bad_supp
     
-    good_epochs       = 3       if not overfit else 1     # num epochs through good_supp
+    good_epochs       = 3       if not overfit else 1      # num epochs through good_supp
     do_good           = True    if not overfit else False  # whether to train on good_supp
     
-    train_epochs      = 10      if not overfit else 50    # every training example is guaranteed included:
+    train_epochs      = 10      if not overfit else 50     # every training example is guaranteed included:
     
-    dev_num_batches   = None    if not overfit else 20    # None for full dev set
-    do_dev            = True    if not overfit else True  # whether to evaluate on dev (ignored for supp data)
-    ckpt              = True    if not overfit else False # whether to save checkpoints
+    dev_num_batches   = None    if not overfit else 20     # None for full dev set
+    do_dev            = True    if not overfit else True   # whether to evaluate on dev (ignored for supp data)
+    ckpt              = True    if not overfit else False  # whether to save checkpoints
     
+    # TODO: switch back to None for batch numbers good and train
     bad_num_batches   = int(10_000 / batch_size) if not overfit else 1  # random sampling is used
-    good_num_batches  = None if not overfit else 1  # random sampling is used
-    train_num_batches = None if not overfit else 20
+    good_num_batches  = int(10_000 / batch_size) if not overfit else 1  # random sampling is used
+    train_num_batches = int(10_000 / batch_size) if not overfit else 20
     # random sampling for train_num_batches IF train_num_batches * batch_size > 210368
     
     start = time()
