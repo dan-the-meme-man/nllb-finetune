@@ -15,7 +15,6 @@ from transformers import AdamW, get_linear_schedule_with_warmup
 
 from matplotlib.pyplot import plot, figure, savefig, grid, legend, title
 
-# TODO: switch back to no_sample_data_loader
 #from get_data_loader import get_data_loader
 from no_sample_data_loader import get_data_loader
 
@@ -352,7 +351,6 @@ def main():
     do_dev            = True    if not overfit else True   # whether to evaluate on dev (ignored for supp data)
     ckpt              = True    if not overfit else False  # whether to save checkpoints
     
-    # TODO: switch back to None for batch numbers good and train
     bad_num_batches   = int(10_000 / batch_size) if not overfit else 1  # random sampling is used
     good_num_batches  = None if not overfit else 1
     train_num_batches = None if not overfit else 20
