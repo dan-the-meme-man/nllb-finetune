@@ -392,7 +392,7 @@ def main():
     print(f'Model size on {device}: {memory_allocated(device=device) / 1024**3:.2f} GB.\n')
     
     # output string for saving plots and checkpoints
-    output_str = f'{batch_size}_{bad_epochs}_{bad_num_batches}_{good_epochs}'
+    output_str = f'{freeze}_{batch_size}_{bad_epochs}_{bad_num_batches}_{good_epochs}'
     output_str += f'_{good_num_batches}_{train_epochs}_{train_num_batches}_{lr}_{weight_decay}'
     if not path.exists('outputs'):
         mkdir('outputs')
