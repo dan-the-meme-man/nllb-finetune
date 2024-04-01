@@ -17,13 +17,15 @@ if not os.path.exists(reports_dir):
 
 for ckpt in ckpts:
     
+    ckpt = os.path.basename(ckpt)
+    
     if not os.path.exists(os.path.join(reports_dir, ckpt)):
         os.mkdir(os.path.join(reports_dir, ckpt))
     
-    for tr_file in os.listdir(ckpt):
-        tr_file_path = os.path.join(ckpt, tr_file)
+    for tr_file in os.listdir(os.path.join(tr_dir, ckpt)):
+        tr_file_path = os.path.join(tr_dir, ckpt, tr_file)
         lang_code = tr_file.split('.')[0]
-        es_file_path = os.path.join('proj_data_final', 'ref', lang_code+'.txt')
+        gold_file_path = os.path.join('proj_data_final', 'ref', lang_code+'.txt')
         
         command = [
             'python',
@@ -31,8 +33,10 @@ for ckpt in ckpts:
             '--sys',
             tr_file_path,
             '--ref',
-            es_file_path,
+            gold_file_path,
             '--detailed_output'
         ]
         
         output_file = os.path.join(reports_dir, ckpt, lang_code+'.txt')
+        
+        execute_command(command, output_file)

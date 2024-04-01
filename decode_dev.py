@@ -1,11 +1,10 @@
 import os
-from gc import collect
 
 from torch.multiprocessing import freeze_support
-from torch.cuda import is_available, empty_cache, memory_allocated
+from torch.cuda import is_available
 from torch import no_grad, load, manual_seed
 
-from transformers import AutoConfig, AutoModelForSeq2SeqLM
+from transformers import AutoModelForSeq2SeqLM
 
 from get_data_loader import get_data_loader
 from make_tokenizer import make_tokenizer, c2t, t2i
@@ -17,19 +16,6 @@ def main():
     #device = 'cpu'
     device = 'cuda' if is_available() else 'cpu'
     manual_seed(42)
-
-    model_name = 'facebook/nllb-200-distilled-600M'
-    
-    config = AutoConfig.from_pretrained(model_name)
-    config.vocab_size += 8 # 8 new special tokens for languages
-    
-    print('Loading model...')
-    model = AutoModelForSeq2SeqLM.from_pretrained(
-        model_name,
-        config=config,
-        ignore_mismatched_sizes=True
-    ).to(device)
-    print('Model loaded.\n')
     
     overfit           = False
     num_workers       = 1
@@ -37,6 +23,21 @@ def main():
     dev_num_batches   = None if not overfit else 5 # None for full dev set
     max_length        = 384
     lang_code         = None if not overfit else 'aym' # None for all languages
+    
+    print('\nLoading model...')
+    tokenizers = dict.fromkeys(c2t.values())
+    for lang_token in tokenizers: # load tokenizers for each language
+        tokenizers[lang_token] = make_tokenizer(lang_token, 'spa_Latn', max_length)
+        assert tokenizers[lang_token]._src_lang == 'spa_Latn'
+        assert tokenizers[lang_token].tgt_lang == lang_token
+        assert len(tokenizers[lang_token]) == 256212
+    model_name = 'facebook/nllb-200-distilled-600M'
+    model = AutoModelForSeq2SeqLM.from_pretrained(
+        model_name,
+        ignore_mismatched_sizes=True
+    ).to(device)
+    model.resize_token_embeddings(len(tokenizers['ayr_Latn'])) # resize embeddings
+    print('Model loaded.\n')
     
     print('Loading dev data...')
     dev_loaders = get_data_loader(
@@ -92,6 +93,8 @@ def main():
                         early_stopping=True
                     )
                     translations.extend(tokenizer.batch_decode(outputs, skip_special_tokens=True))
+                    
+                    assert len(translations) == (i+1)*batch_size
                     
                     if i % 100 == 0:
                         print(f'{i} batches decoded for {lang_code}.')
