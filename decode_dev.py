@@ -19,7 +19,7 @@ def main():
     
     overfit           = False
     num_workers       = 1
-    batch_size        = 8    if not overfit else 1
+    batch_size        = 1    if not overfit else 1
     dev_num_batches   = None if not overfit else 5 # None for full dev set
     max_length        = 384
     lang_code         = None if not overfit else 'aym' # None for all languages
@@ -99,7 +99,6 @@ def main():
                     except:
                         print(f'Batch {i} failed for {lang_code}.')
                         print(f'Batch size: {batch_size}, translations length: {len(translations)}.')
-                        print(f'Translations: {translations}.')
                     
                     if i % 100 == 0:
                         print(f'{i} batches decoded for {lang_code}.')

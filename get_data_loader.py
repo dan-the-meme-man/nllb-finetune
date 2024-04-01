@@ -434,8 +434,12 @@ class DevSet(Dataset):
                 split_line = ['', '']
             else:
                 split_line = strip_line.split('\t')
-                if len(split_line) != 2:
-                    print('Error:', split_line)
+                if len(split_line) == 1:
+                    split_line = [''] + split_line
+                elif len(split_line) == 0:
+                    split_line = ['', '']
+                elif len(split_line) > 2:
+                    split_line = split_line[:2]
             
             es_batch.append(split_line[0].strip())
             if use_tgts:
