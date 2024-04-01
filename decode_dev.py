@@ -1,13 +1,18 @@
 import os
+from gc import collect
 
 from torch.multiprocessing import freeze_support
-from torch.cuda import is_available
+from torch.cuda import is_available, empty_cache
 from torch import no_grad, load, manual_seed
 
 from transformers import AutoModelForSeq2SeqLM
 
 from get_data_loader import get_data_loader
 from make_tokenizer import make_tokenizer, c2t, t2i
+
+def free():
+    collect()
+    empty_cache()
 
 def main():
     
@@ -25,6 +30,7 @@ def main():
     lang_code         = None if not overfit else 'aym' # None for all languages
     
     print('\nLoading model...')
+    free()
     tokenizers = dict.fromkeys(c2t.values())
     for lang_token in tokenizers: # load tokenizers for each language
         tokenizers[lang_token] = make_tokenizer(lang_token, 'spa_Latn', max_length)
@@ -37,9 +43,11 @@ def main():
         ignore_mismatched_sizes=True
     ).to(device)
     model.resize_token_embeddings(len(tokenizers['ayr_Latn'])) # resize embeddings
+    free()
     print('Model loaded.\n')
     
     print('Loading dev data...')
+    free()
     dev_loaders = get_data_loader(
         split='dev',
         batch_size=batch_size,
@@ -51,6 +59,7 @@ def main():
         use_tgts=False, # needed to do decoding
         get_tokenized=True
     )
+    free()
     print('Dev data loaded.\n')
     
     tr_dir = os.path.join('outputs', 'translations')
@@ -60,9 +69,12 @@ def main():
     for ckpt in os.listdir(os.path.join('outputs', 'ckpts')):
         
         print(f'Loading checkpoint {ckpt}...')
+        free()
         file_path = os.path.join('outputs', 'ckpts', ckpt)
         checkpoint = load(file_path)
         model.load_state_dict(checkpoint['model_state_dict'])
+        del checkpoint
+        free()
         print(f'Checkpoint {ckpt} loaded.\n')
         
         model_tr_dir = os.path.join(tr_dir, ckpt[:-4])
@@ -80,9 +92,6 @@ def main():
                 translations = []
                 
                 for i, batch in enumerate(dev_loader):
-                    
-                    # print(batch)
-                    # exit()
                     
                     outputs = model.generate(
                         **batch.to(device),
@@ -102,12 +111,16 @@ def main():
                     
                     if i % 100 == 0:
                         print(f'{i} batches decoded for {lang_code}.')
-                    
+                        
+                    del outputs
+                    free()
+                
                 loc = os.path.join(model_tr_dir, lang_code + '.txt')
                     
                 with open(loc, 'w+', encoding='utf-8') as f:
                     for t in translations:
                         f.write(t + '\n')
+                free()
                         
 if __name__ == '__main__':
     main()
