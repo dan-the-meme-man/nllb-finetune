@@ -94,6 +94,11 @@ def main():
                     )
                     translations.extend(tokenizer.batch_decode(outputs, skip_special_tokens=True))
                     
+                    print(len(translations))
+                    print((i+1)*batch_size)
+                    print(translations)
+                    exit()
+                    
                     assert len(translations) == (i+1)*batch_size
                     
                     if i % 100 == 0:
