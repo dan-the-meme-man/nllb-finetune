@@ -8,7 +8,7 @@ from torch.multiprocessing import freeze_support
 from torch.cuda import is_available, empty_cache, memory_allocated
 from torch.optim.lr_scheduler import LambdaLR
 from torch.nn.utils import clip_grad_norm_
-from torch import manual_seed, no_grad, save
+from torch import manual_seed, no_grad, save, load
 
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from transformers import AdamW, get_linear_schedule_with_warmup
@@ -325,6 +325,8 @@ def train(
 def main():
     
     """ HYPERPARAMETERS """ # TODO: search for optimal hyperparameters
+    load_ckpt         = True                              # whether to load a checkpoint
+    ckpt_file_name    = 'checkpoint10_train_False_4_0_2500_3_None_10_None_1e-05_0.0001.pth'
     overfit           = False                              # overfit on small data to test functionality
     log_freq          = 100     if not overfit else 1      # frequency of logging in batches
     num_workers       = 2                                  # number of workers for data loader
@@ -377,6 +379,8 @@ def main():
         ignore_mismatched_sizes=True
     )
     model.resize_token_embeddings(len(tokenizers['ayr_Latn'])) # resize embeddings
+    if load_ckpt:
+        model.load_state_dict(load(ckpt_file_name)['model_state_dict'])
     # freeze embeddings and decoder
     if freeze:
         print('Freezing almost everything...')
@@ -392,6 +396,8 @@ def main():
     # output string for saving plots and checkpoints
     output_str = f'{freeze}_{batch_size}_{bad_epochs}_{bad_num_batches}_{good_epochs}'
     output_str += f'_{good_num_batches}_{train_epochs}_{train_num_batches}_{lr}_{weight_decay}'
+    if load_ckpt:
+        output_str += f'_ckpt_{ckpt_file_name[:-4]}'
     if not path.exists('outputs'):
         mkdir('outputs')
     
@@ -402,6 +408,8 @@ def main():
         betas=(0.9, 0.999),
         weight_decay=weight_decay
     )
+    if load_ckpt:
+        optimizer.load_state_dict(load(ckpt_file_name)['optimizer_state_dict'])
     # total_batches = bad_num_batches + good_num_batches + train_num_batches
     # scheduler = get_linear_schedule_with_warmup(
     #     optimizer,
