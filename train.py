@@ -380,6 +380,7 @@ def main():
     )
     model.resize_token_embeddings(len(tokenizers['ayr_Latn'])) # resize embeddings
     if load_ckpt:
+        print('Loading checkpoint...')
         model.load_state_dict(load(ckpt_file_name)['model_state_dict'])
     # freeze embeddings and decoder
     if freeze:
