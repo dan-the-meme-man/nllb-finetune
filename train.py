@@ -379,9 +379,10 @@ def main():
         ignore_mismatched_sizes=True
     )
     model.resize_token_embeddings(len(tokenizers['ayr_Latn'])) # resize embeddings
+    ckpt_path = path.join('outputs', 'ckpts', ckpt_file_name)
     if load_ckpt:
         print('Loading checkpoint...')
-        model.load_state_dict(load(ckpt_file_name)['model_state_dict'])
+        model.load_state_dict(load(ckpt_path)['model_state_dict'])
     # freeze embeddings and decoder
     if freeze:
         print('Freezing almost everything...')
@@ -410,7 +411,7 @@ def main():
         weight_decay=weight_decay
     )
     if load_ckpt:
-        optimizer.load_state_dict(load(ckpt_file_name)['optimizer_state_dict'])
+        optimizer.load_state_dict(load(ckpt_path)['optimizer_state_dict'])
     # total_batches = bad_num_batches + good_num_batches + train_num_batches
     # scheduler = get_linear_schedule_with_warmup(
     #     optimizer,
