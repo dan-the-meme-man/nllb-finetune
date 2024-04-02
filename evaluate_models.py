@@ -19,6 +19,11 @@ for ckpt in ckpts:
     
     ckpt = os.path.basename(ckpt)
     
+    # if not ckpt.startswith('checkpoint10_train_False'):
+    #     continue
+    
+    # print(ckpt)
+    
     if not os.path.exists(os.path.join(reports_dir, ckpt)):
         os.mkdir(os.path.join(reports_dir, ckpt))
     
