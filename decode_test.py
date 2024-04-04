@@ -25,7 +25,7 @@ def main():
     overfit           = False
     num_workers       = 1
     batch_size        = 4    if not overfit else 1
-    dev_num_batches   = None if not overfit else 5 # None for full dev set
+    test_num_batches  = None if not overfit else 5 # None for full test set
     max_length        = 384
     lang_code         = None if not overfit else 'aym' # None for all languages
     
@@ -48,10 +48,10 @@ def main():
     
     print('Loading dev data...')
     free()
-    dev_loaders = get_data_loader(
-        split='dev',
+    test_loaders = get_data_loader(
+        split='test',
         batch_size=batch_size,
-        num_batches=dev_num_batches,
+        num_batches=test_num_batches,
         max_length=max_length,
         lang_code=lang_code,
         shuffle=False, # ignored
@@ -60,9 +60,9 @@ def main():
         get_tokenized=True
     )
     free()
-    print('Dev data loaded.\n')
+    print('Test data loaded.\n')
     
-    tr_dir = os.path.join('outputs', 'translations')
+    tr_dir = os.path.join('outputs', 'translations_test')
     if not os.path.exists(tr_dir):
         os.mkdir(tr_dir)
 
@@ -83,15 +83,15 @@ def main():
         
         with no_grad():
             model.eval()
-            for dev_loader in dev_loaders:
+            for test_loader in test_loaders:
                 
-                lang_code = dev_loader.dataset.lang_code
-                lang_token = dev_loader.dataset.lang_token
-                tokenizer = dev_loader.dataset.tokenizer
+                lang_code = test_loader.dataset.lang_code
+                lang_token = test_loader.dataset.lang_token
+                tokenizer = test_loader.dataset.tokenizer
                 
                 translations = []
                 
-                for i, batch in enumerate(dev_loader):
+                for i, batch in enumerate(test_loader):
                     
                     outputs = model.generate(
                         **batch.to(device),

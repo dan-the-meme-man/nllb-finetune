@@ -520,6 +520,109 @@ class DevSet(Dataset):
         """
         
         return len(self.examples)
+    
+class TestSet(Dataset):
+    
+    """
+        This dataset encapsulates the development set.
+        
+        Parameters:
+        - batch_size (int): The number of examples in each batch.
+        - num_batches (int): The number of batches to load.
+        - max_length (int): The maximum length of a sequence.
+        - lang_code (str): The language code of the target language.
+        - use_tgts (bool): Whether to use target sentences.
+        - get_tokenized (bool): Whether to tokenize the data.
+    """
+    
+    def __init__(
+        self,
+        batch_size: int,
+        num_batches: int,
+        max_length: int,
+        lang_code: str,
+        use_tgts: bool,
+        get_tokenized: bool
+    ):
+        
+        super().__init__()
+        
+        self.examples = []
+        self.lang_code = lang_code
+        self.lang_token = c2t[lang_code]
+        
+        tokenizers = dict.fromkeys(c2t.values())
+        
+        for lang_token in tokenizers:
+            tokenizers[lang_token] = make_tokenizer(lang_token, 'spa_Latn', max_length)
+        
+        self.tokenizer = tokenizers[self.lang_token]
+        assert self.tokenizer._src_lang == 'spa_Latn'
+        assert self.tokenizer.tgt_lang == self.lang_token
+        
+        file_path = path.join('proj_data_final', 'test', lang_code+'.txt')
+        lines = open(file_path, 'r', encoding='utf-8').readlines()
+        
+        es_batch = []
+        assert use_tgts == False
+            
+        # count = 0
+        
+        for i in range(len(lines)):
+         
+            es_batch.append(lines[i].strip())
+            
+            if len(es_batch) == batch_size or i == len(lines) - 1:
+                if get_tokenized:
+                    assert self.tokenizer._src_lang == 'spa_Latn'
+                    assert self.tokenizer.tgt_lang == self.lang_token
+                    tokenized = self.tokenizer(
+                        text = es_batch,
+                        return_tensors = 'pt',
+                        padding = 'longest',
+                        truncation = True,
+                        max_length = max_length
+                    )
+                    # if self.tokenizer.unk_token_id in tokenized['labels']:
+                    #     count += 1
+                else:
+                    tokenized = es_batch
+                self.examples.append(tokenized)
+                
+                es_batch = []
+            
+            if i % 1000 == 999:
+                print(f'Loaded {i+1}/{len(lines)} lines for {self.lang_token}.')
+            if num_batches is not None and i >= num_batches:
+                break
+            
+        # print(lang_code, str(count), str(len(self.examples)))
+                
+    def __getitem__(self, idx) -> Union[BatchEncoding, tuple[list[str], list[str]], list[str]]:
+        
+        """
+            Returns the example at the given index.
+            
+            Parameters:
+            - idx (int): The index of the example to return.
+            
+            Returns
+            - Union[transformers.tokenization_utils_base.BatchEncoding, tuple[list[str], list[str]], list[str]]:
+                The example at the given index.
+        """
+        
+        return self.examples[idx]
+
+    def __len__(self) -> int:
+        
+        """
+            Returns the number of examples in the dataset.
+            
+            Returns:
+            - int: The number of examples in the dataset.
+        """
+        
+        return len(self.examples)
 
 def get_data_loader(
     split: str,
@@ -573,7 +676,7 @@ def get_data_loader(
                 num_workers=num_workers,
                 collate_fn=collate_fn # remove the extra dimension that DataLoader adds
             )
-    else:
+    elif split == 'dev':
         if lang_code is not None:
             return [DataLoader(
                 DevSet(batch_size, num_batches, max_length, lang_code, use_tgts, get_tokenized),
@@ -590,3 +693,22 @@ def get_data_loader(
                 num_workers=num_workers,
                 collate_fn=collate_fn # remove the extra dimension that DataLoader adds
             ) for l in c2t.keys() if l != 'es']
+    elif split == 'test':
+        if lang_code is not None:
+            return [DataLoader(
+                TestSet(batch_size, num_batches, max_length, lang_code, use_tgts, get_tokenized),
+                batch_size=1, # batches are already created, so just load one at a time
+                shuffle=False,
+                num_workers=num_workers,
+                collate_fn=collate_fn # remove the extra dimension that DataLoader adds
+            )]
+        else:
+            return [DataLoader(
+                TestSet(batch_size, num_batches, max_length, l, use_tgts, get_tokenized),
+                batch_size=1, # batches are already created, so just load one at a time
+                shuffle=False,
+                num_workers=num_workers,
+                collate_fn=collate_fn # remove the extra dimension that DataLoader adds
+            ) for l in c2t.keys() if l != 'es']
+    else:
+        raise ValueError('Invalid split name.')
