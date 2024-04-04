@@ -93,6 +93,8 @@ def main():
                 
                 for i, batch in enumerate(test_loader):
                     
+                    # print(batch)
+                    
                     outputs = model.generate(
                         **batch.to(device),
                         forced_bos_token_id=t2i[lang_token],
@@ -103,11 +105,17 @@ def main():
                     )
                     translations.extend(tokenizer.batch_decode(outputs, skip_special_tokens=True))
                     
+                    # print(translations)
+                    # exit()
+                    
                     try:
                         assert len(translations) == (i+1)*batch_size
                     except:
                         print(f'Batch {i} failed for {lang_code}.')
                         print(f'Batch size: {batch_size}, translations length: {len(translations)}.')
+                        if i == len(test_loader)-1:
+                            print(f'Last batch for {lang_code}.')
+                    print(f'num translations: {len(translations)}')
                     
                     if i % 100 == 0:
                         print(f'{i} batches decoded for {lang_code}.')
