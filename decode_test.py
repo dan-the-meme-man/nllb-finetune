@@ -46,7 +46,7 @@ def main():
     free()
     print('Model loaded.\n')
     
-    print('Loading dev data...')
+    print('Loading test data...')
     free()
     test_loaders = get_data_loader(
         split='test',

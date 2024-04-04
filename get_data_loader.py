@@ -655,7 +655,7 @@ def get_data_loader(
         - Union[DataLoader, list[DataLoader]]: DataLoader (or list of) for specified split and language code.
     """
     
-    if split != 'dev':
+    if split not in ('dev', 'test'):
         split_loc = path.join('proj_data_final', split)
         files = [path.join(split_loc, f) for f in listdir(split_loc) if f.endswith('.tsv')]
         if lang_code is not None:
