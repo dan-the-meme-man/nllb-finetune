@@ -68,6 +68,10 @@ def main():
 
     for ckpt in os.listdir(os.path.join('outputs', 'ckpts')):
         
+        # TODO: remove this
+        if 'ckpt' not in ckpt:
+            continue
+        
         print(f'Loading checkpoint {ckpt}...')
         free()
         file_path = os.path.join('outputs', 'ckpts', ckpt)
@@ -108,6 +112,9 @@ def main():
                     except:
                         print(f'Batch {i} failed for {lang_code}.')
                         print(f'Batch size: {batch_size}, translations length: {len(translations)}.')
+                        if i == len(dev_loader)-1:
+                            print(f'Last batch for {lang_code}.')
+                    print(f'num translations: {len(translations)}')
                     
                     if i % 100 == 0:
                         print(f'{i} batches decoded for {lang_code}.')
