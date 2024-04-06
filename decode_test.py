@@ -71,7 +71,7 @@ def main():
         # TODO: remove this
         if 'ckpt' not in ckpt:
             continue
-        if not any(['8' in ckpt, '8' in ckpt, '9' in ckpt, '10' in ckpt]):
+        if 'checkpoint10' not in ckpt:
             continue
         
         print(f'Loading checkpoint {ckpt}...')
