@@ -68,6 +68,12 @@ def main():
 
     for ckpt in os.listdir(os.path.join('outputs', 'ckpts')):
         
+        # TODO: remove this
+        if 'ckpt' not in ckpt:
+            continue
+        if not any(['8' in ckpt, '8' in ckpt, '9' in ckpt, '10' in ckpt]):
+            continue
+        
         print(f'Loading checkpoint {ckpt}...')
         free()
         file_path = os.path.join('outputs', 'ckpts', ckpt)
