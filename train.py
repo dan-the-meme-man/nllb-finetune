@@ -344,7 +344,7 @@ def main():
     bad_epochs        = 0       if not overfit else 0      # num epochs through bad_supp
     do_bad            = False    if not overfit else False # whether to train on bad_supp
     
-    good_epochs       = 3       if not overfit else 1      # num epochs through good_supp
+    good_epochs       = 0       if not overfit else 1      # num epochs through good_supp
     do_good           = False    if not overfit else False  # whether to train on good_supp
     
     train_epochs      = 10      if not overfit else 50     # every training example is guaranteed included:
