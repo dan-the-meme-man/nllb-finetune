@@ -68,9 +68,11 @@ def main():
 
     for ckpt in os.listdir(os.path.join('outputs', 'ckpts')):
         
-        # TODO: remove this
-        if 'ckpt' not in ckpt:
-            continue
+        model_tr_dir = os.path.join(tr_dir, ckpt[:-4])
+        if not os.path.exists(model_tr_dir):
+            os.mkdir(model_tr_dir)
+        else:
+            continue # we already decoded using this checkpoint
         
         print(f'Loading checkpoint {ckpt}...')
         free()
@@ -80,10 +82,6 @@ def main():
         del checkpoint
         free()
         print(f'Checkpoint {ckpt} loaded.\n')
-        
-        model_tr_dir = os.path.join(tr_dir, ckpt[:-4])
-        if not os.path.exists(model_tr_dir):
-            os.mkdir(model_tr_dir)
         
         with no_grad():
             model.eval()
