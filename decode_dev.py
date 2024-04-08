@@ -141,6 +141,8 @@ def main():
                     del outputs
                     free()
                 
+                if not os.path.exists(model_tr_dir):
+                    os.mkdir(model_tr_dir)
                 loc = os.path.join(model_tr_dir, lang_code + '.txt')
                     
                 with open(loc, 'w+', encoding='utf-8') as f:
