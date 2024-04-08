@@ -83,10 +83,12 @@ def main():
     for ckpt in ckpts:
         
         model_tr_dir = os.path.join(tr_dir, ckpt[:-4])
-        if not os.path.exists(model_tr_dir):
-            os.mkdir(model_tr_dir)
-        else:
-            continue # we already decoded using this checkpoint
+        
+        if not use_bad_ckpts:
+            if not os.path.exists(model_tr_dir):
+                os.mkdir(model_tr_dir)
+            else:
+                continue # we already decoded using this checkpoint
         
         print(f'Loading checkpoint {ckpt}...')
         free()
