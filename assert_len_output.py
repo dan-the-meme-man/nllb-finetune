@@ -1,6 +1,6 @@
 import os
 
-use_dev = True
+use_dev = False
 
 translations = os.path.join('outputs', 'translations')
 if not use_dev:

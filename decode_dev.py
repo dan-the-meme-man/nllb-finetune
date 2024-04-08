@@ -10,6 +10,15 @@ from transformers import AutoModelForSeq2SeqLM
 from get_data_loader import get_data_loader
 from make_tokenizer import make_tokenizer, c2t, t2i
 
+# README: use a list of bad checkpoints to avoid decoding them again
+use_bad_ckpts = True
+
+if use_bad_ckpts:
+    bad_ckpts = set(open('bad_ckpts.txt', 'r').read().splitlines())
+    print('Bad checkpoints:')
+    for bad_ckpt in bad_ckpts:
+        print(bad_ckpt)
+
 def free():
     collect()
     empty_cache()
@@ -65,8 +74,13 @@ def main():
     tr_dir = os.path.join('outputs', 'translations')
     if not os.path.exists(tr_dir):
         os.mkdir(tr_dir)
+        
+    if use_bad_ckpts:
+        ckpts = bad_ckpts
+    else:
+        ckpts = os.listdir(os.path.join('outputs', 'ckpts'))
 
-    for ckpt in os.listdir(os.path.join('outputs', 'ckpts')):
+    for ckpt in ckpts:
         
         model_tr_dir = os.path.join(tr_dir, ckpt[:-4])
         if not os.path.exists(model_tr_dir):
