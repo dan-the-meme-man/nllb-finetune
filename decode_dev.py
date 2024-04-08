@@ -91,7 +91,12 @@ def main():
         print(f'Loading checkpoint {ckpt}...')
         free()
         file_path = os.path.join('outputs', 'ckpts', ckpt)
-        checkpoint = load(file_path)
+        try:
+            checkpoint = load(file_path)
+        except Exception as e:
+            print(f'Failed to load checkpoint {ckpt}.')
+            print(e)
+            continue
         model.load_state_dict(checkpoint['model_state_dict'])
         del checkpoint
         free()
