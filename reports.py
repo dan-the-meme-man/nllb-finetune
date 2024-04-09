@@ -17,9 +17,16 @@ for ckpt in ckpts:
         lang = os.path.basename(file_path)[:-4]
         
         lines = open(file_path, 'r', encoding='utf-8').readlines()
-        if 'assert' in lines[3]:
-            good = False
-            break
+        
+        try:
+            if 'assert' in lines[3]:
+                print('unusable', os.path.basename(ckpt))
+                good = False
+                break
+        except:
+            print(file_path)
+            exit()
+            
         score = float(lines[3].split()[-1])
         
         langs.append(lang)
@@ -29,13 +36,13 @@ for ckpt in ckpts:
         good = False
     
     for score in scores:
-        if score < 10:
+        if score < 12.3: # threshold score
             good = False
             break
         
     if good:
         print()
-        print(ckpt)
+        print('good', os.path.basename(ckpt))
         for i in range(11):
             print(f'{langs[i]}: {scores[i]}')
         print()

@@ -9,6 +9,7 @@ def execute_command(command, output_file):
         for line in process.stdout:
             outfile.write(line)
         process.wait()
+    print(f'Output written to {output_file}.')
 
 tr_dir = os.path.join('outputs', 'translations')
 if use_test:
