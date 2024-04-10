@@ -1,12 +1,8 @@
 __pycache__/
 proj_data_final/
-sample.py
 *.pyc
-test_data_loader.py
 outputs/
 evaluate.py
-hf_example.py
-test_decode.py
 vocab/vocab.txt
 desktop.ini
 jb_mamba.sh
