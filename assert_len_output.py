@@ -1,7 +1,7 @@
 import os
 
 # README: set to True to check dev translations, False to check test translations
-use_dev = False
+use_dev = True
 
 translations = os.path.join('outputs', 'translations')
 if not use_dev:

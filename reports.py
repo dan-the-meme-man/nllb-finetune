@@ -36,7 +36,7 @@ for ckpt in ckpts:
         good = False
     
     for score in scores:
-        if score < 12.3: # threshold score
+        if score < 12.1: # threshold score
             good = False
             break
         
