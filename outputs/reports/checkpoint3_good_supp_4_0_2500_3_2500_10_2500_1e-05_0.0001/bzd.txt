@@ -1,0 +1,5 @@
+[]
+996
+#### Score Report ####
+chrF2++ = 10.06
+BLEU = 1.56 18.8/2.9/1.4/0.7 (BP = 0.589 ratio = 0.654 hyp_len = 9520 ref_len = 14565)

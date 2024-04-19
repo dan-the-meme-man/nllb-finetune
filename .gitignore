@@ -1,7 +1,10 @@
 __pycache__/
 proj_data_final/
 *.pyc
-outputs/
+outputs/plots/
+outputs/submission/
+outputs/translations/
+outputs/translations_test/
 evaluate.py
 vocab/vocab.txt
 desktop.ini

@@ -1,0 +1,5 @@
+[]
+Traceback (most recent call last):
+  File "c:\Users\danie\OneDrive\Desktop\Current\LING 4466\nllb-finetune\evaluate.py", line 50, in <module>
+    assert len(system_lines) == len(gold_lines)
+AssertionError
